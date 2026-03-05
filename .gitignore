@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+client/node_modules/
+
+# Build output
+dist/
+client/dist/
+
+# Environment variables (JANGAN di-commit!)
+.env
+
+# Prisma SQLite (jika pakai PostgreSQL, baris ini tidak perlu)
+prisma/*.db
+prisma/*.db-journal
+
+# OS & Editor
+.DS_Store
+.vscode/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary
+tmp/

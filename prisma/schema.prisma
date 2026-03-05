@@ -1,0 +1,279 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// Users & Authentication
+// ============================================================
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(AGENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignedTickets Ticket[]  @relation("AssignedAgent")
+  messages        Message[] @relation("SentByAgent")
+  claimedTickets  Ticket[]  @relation("ClaimedBy")
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  AGENT
+}
+
+// ============================================================
+// Clients (Rumah Sakit)
+// ============================================================
+
+model Client {
+  id         String   @id @default(cuid())
+  name       String // Nama RS
+  address    String?  @db.Text
+  customerId String   @unique @map("customer_id") // ID Pelanggan
+  phone      String? // Nomor telepon utama RS
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  contacts Contact[]
+
+  @@map("clients")
+}
+
+// ============================================================
+// Contacts (Personil IT / Staf RS — User WhatsApp)
+// ============================================================
+
+model Contact {
+  id          String   @id @default(cuid())
+  clientId    String   @map("client_id")
+  name        String
+  phoneNumber String   @unique @map("phone_number") // Nomor WA, format internasional
+  waId        String?  @unique @map("wa_id") // WhatsApp ID dari Meta API
+  position    String? // Jabatan (IT Staff, Kepala IT, dll.)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  client  Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  tickets Ticket[]
+
+  @@index([clientId])
+  @@map("contacts")
+}
+
+// ============================================================
+// Tickets
+// ============================================================
+
+model Ticket {
+  id              String         @id @default(cuid())
+  ticketNumber    String         @unique @map("ticket_number") // Nomor tiket auto-generate (e.g. TKT-00001)
+  contactId       String         @map("contact_id")
+  category        TicketCategory @default(BUG)
+  status          TicketStatus   @default(NEW)
+  priority        TicketPriority @default(MEDIUM)
+  subject         String?
+  assignedAgentId String?        @map("assigned_agent_id")
+  claimedById     String?        @map("claimed_by_id")
+  claimedAt       DateTime?      @map("claimed_at")
+  resolvedAt      DateTime?      @map("resolved_at")
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  contact       Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  assignedAgent User?     @relation("AssignedAgent", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  claimedBy     User?     @relation("ClaimedBy", fields: [claimedById], references: [id], onDelete: SetNull)
+  messages      Message[]
+
+  @@index([contactId])
+  @@index([assignedAgentId])
+  @@index([claimedById])
+  @@index([status])
+  @@index([category])
+  @@map("tickets")
+}
+
+enum TicketCategory {
+  BUG
+  FEATURE_REQUEST
+  SERVICE
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  PENDING
+  RESOLVED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+// ============================================================
+// Messages (Riwayat Percakapan)
+// ============================================================
+
+model Message {
+  id          String           @id @default(cuid())
+  ticketId    String           @map("ticket_id")
+  direction   MessageDirection
+  type        MessageType      @default(TEXT)
+  body        String           @db.Text
+  wamid       String?          @unique // WhatsApp Message ID untuk deduplication
+  mediaUrl    String?          @map("media_url") @db.Text
+  sentById    String?          @map("sent_by_id") // Agent yang mengirim (untuk outbound & internal notes)
+  isRead      Boolean          @default(false) @map("is_read")
+  timestamp   DateTime         @default(now()) // Waktu pesan dikirim/diterima
+  deliveredAt DateTime?        @map("delivered_at")
+  readAt      DateTime?        @map("read_at")
+  createdAt   DateTime         @default(now())
+
+  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sentBy User?  @relation("SentByAgent", fields: [sentById], references: [id], onDelete: SetNull)
+
+  @@index([ticketId])
+  @@index([sentById])
+  @@index([wamid])
+  @@index([direction])
+  @@map("messages")
+}
+
+enum MessageDirection {
+  INBOUND // Dari klien
+  OUTBOUND // Ke klien
+  INTERNAL // Internal Notes antar agen
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  TEMPLATE
+  INTERACTIVE
+}
+
+// ============================================================
+// Chat Templates (HSM / Template Message)
+// ============================================================
+
+model ChatTemplate {
+  id           String               @id @default(cuid())
+  name         String               @unique // Nama template di Meta Business
+  language     String               @default("id") // Kode bahasa (id, en)
+  category     TemplateCategoryType @default(UTILITY)
+  headerText   String?              @map("header_text") @db.Text
+  bodyText     String               @map("body_text") @db.Text // Template body dengan placeholder {{1}}, {{2}}, dst.
+  footerText   String?              @map("footer_text")
+  status       TemplateStatus       @default(PENDING)
+  metaId       String?              @unique @map("meta_id") // Template ID dari Meta
+  isActive     Boolean              @default(true) @map("is_active")
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  @@map("chat_templates")
+}
+
+enum TemplateCategoryType {
+  UTILITY
+  MARKETING
+  AUTHENTICATION
+}
+
+enum TemplateStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// ============================================================
+// Blast Campaigns (Pengiriman Pesan Massal)
+// ============================================================
+
+model BlastCampaign {
+  id            String             @id @default(cuid())
+  name          String // Nama campaign
+  templateName  String             @map("template_name") // Nama template yang digunakan
+  status        BlastCampaignStatus @default(DRAFT)
+  totalRecipients Int              @default(0) @map("total_recipients")
+  sentCount     Int                @default(0) @map("sent_count")
+  failedCount   Int                @default(0) @map("failed_count")
+  scheduledAt   DateTime?          @map("scheduled_at")
+  startedAt     DateTime?          @map("started_at")
+  completedAt   DateTime?          @map("completed_at")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  recipients BlastRecipient[]
+
+  @@map("blast_campaigns")
+}
+
+enum BlastCampaignStatus {
+  DRAFT
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model BlastRecipient {
+  id           String              @id @default(cuid())
+  campaignId   String              @map("campaign_id")
+  phoneNumber  String              @map("phone_number")
+  contactName  String?             @map("contact_name")
+  status       BlastRecipientStatus @default(PENDING)
+  wamid        String?             @unique // WA Message ID untuk tracking
+  sentAt       DateTime?           @map("sent_at")
+  deliveredAt  DateTime?           @map("delivered_at")
+  errorMessage String?             @map("error_message") @db.Text
+  createdAt    DateTime            @default(now())
+
+  campaign BlastCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([status])
+  @@map("blast_recipients")
+}
+
+enum BlastRecipientStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+// ============================================================
+// Webhook Logs (Logging untuk debugging & audit trail)
+// ============================================================
+
+model WebhookLog {
+  id        String   @id @default(cuid())
+  eventType String   @map("event_type") // messages, message_status, dll.
+  payload   String   @db.LongText // Raw JSON payload dari Meta
+  isValid   Boolean  @default(true) @map("is_valid") // Hasil validasi X-Hub-Signature-256
+  createdAt DateTime @default(now())
+
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("webhook_logs")
+}
