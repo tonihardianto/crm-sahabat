@@ -26,8 +26,8 @@ app.use(
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
 
-// ---- Public Routes ----
-app.use("/webhook", webhookRoutes);
+// ---- Public Routes (no auth required) ----
+app.use("/api/webhook", webhookRoutes);
 app.use("/api/auth", authRoutes);
 
 // ---- Protected Routes (require login) ----
