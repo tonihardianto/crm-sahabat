@@ -66,13 +66,13 @@ function DocBubble({ url, filename, variant }: { url: string; filename: string; 
     const isWord = ['DOC', 'DOCX'].includes(ext);
     const isExcel = ['XLS', 'XLSX'].includes(ext);
 
-    const iconBg = isPdf ? 'bg-red-500' : isWord ? 'bg-blue-500' : isExcel ? 'bg-green-600' : 'bg-gray-500';
-    const textColor = variant === 'outbound' ? 'text-white' : 'text-foreground';
+    const iconBg = isPdf ? 'bg-red-500' : isWord ? 'bg-blue-900' : isExcel ? 'bg-green-600' : 'bg-gray-500';
+    const textColor = variant === 'outbound' ? 'text-white' : 'text-white';
     const subColor = variant === 'outbound' ? 'text-blue-100/70' : 'text-muted-foreground';
     const borderColor = variant === 'outbound' ? 'border-blue-400/20' : 'border-border';
 
     return (
-        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-2 rounded-xl border ${borderColor} hover:opacity-80 transition-opacity mb-1 min-w-[200px] max-w-[260px]`}>
+        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1 rounded-xl border ${borderColor} hover:opacity-80 transition-opacity bg-primary/50 mb-1 min-w-[200px] max-w-[260px]`}>
             <div className={`${iconBg} rounded-lg w-10 h-10 flex items-center justify-center shrink-0`}>
                 <span className="text-white text-[10px] font-bold">{ext}</span>
             </div>
@@ -309,7 +309,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             {msgs.map((msg) => (
                                 <div key={msg.id} className={`flex mb-2 ${msg.direction === 'INBOUND' ? 'justify-start' : msg.direction === 'OUTBOUND' ? 'justify-end' : 'justify-center'}`}>
                                     {msg.direction === 'INTERNAL' ? (
-                                        <div className="max-w-[85%] px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                        <div className="max-w-[85%] px-2 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
                                             <div className="flex items-center gap-1.5 mb-1">
                                                 <StickyNote className="w-3 h-3 text-amber-400" />
                                                 <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
@@ -319,7 +319,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                         </div>
                                     ) : msg.direction === 'INBOUND' ? (
                                         <div className="max-w-[70%]">
-                                            <div className="px-4 py-2.5 rounded-2xl rounded-bl-md bg-muted border border-border">
+                                            <div className="px-1 py-1.5 rounded-xl rounded-bl-md bg-muted border border-border">
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                                                         <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
@@ -331,14 +331,14 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
                                                     <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="inbound" />
                                                 ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm text-foreground whitespace-pre-wrap">{msg.body}</p>}
+                                                {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-foreground whitespace-pre-wrap">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-xs text-muted-foreground mt-1">{msg.body}</p>}
-                                                <span className="text-[10px] text-muted-foreground mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                                <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="max-w-[70%]">
-                                            <div className="px-4 py-2.5 rounded-2xl rounded-br-md bg-blue-600 border border-blue-500/30">
+                                            <div className="px-1 py-1.5 rounded-xl rounded-br-md bg-blue-600 border border-blue-500/30">
                                                 {msg.sentBy && (
                                                     <div className="flex items-center gap-1 mb-1">
                                                         <User2 className="w-3 h-3 text-blue-200/70" />
@@ -356,9 +356,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
                                                     <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="outbound" />
                                                 ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm text-white whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-xs text-blue-100/70 mt-1">{msg.body}</p>}
-                                                <span className="text-[10px] text-blue-200/50 mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                                {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-white whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-blue-100/70 mt-1">{msg.body}</p>}
+                                                <span className="text-[10px] text-blue-200/50 mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
                                     )}
