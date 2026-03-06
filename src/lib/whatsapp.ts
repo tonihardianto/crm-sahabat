@@ -118,6 +118,39 @@ export async function markAsRead(messageId: string): Promise<void> {
 }
 
 /**
+ * Dapatkan URL download media dari media ID (untuk pesan masuk)
+ */
+export async function getMediaUrl(mediaId: string): Promise<{ url: string; mime_type: string }> {
+    const { accessToken } = getConfig();
+
+    const res = await fetch(`${BASE_URL}/${mediaId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!res.ok) throw new Error(`Failed to get media URL for ${mediaId}: ${res.status}`);
+
+    const data = await res.json() as { url: string; mime_type: string };
+    return data;
+}
+
+/**
+ * Download file media dari URL WhatsApp dan kembalikan sebagai Buffer
+ */
+export async function downloadMedia(url: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const { accessToken } = getConfig();
+
+    const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!res.ok) throw new Error(`Failed to download media: ${res.status}`);
+
+    const buffer = Buffer.from(await res.arrayBuffer());
+    const contentType = res.headers.get("content-type") || "application/octet-stream";
+    return { buffer, contentType };
+}
+
+/**
  * Kirim media message (image, document, audio, video) via URL publik
  */
 export async function sendMediaMessage(

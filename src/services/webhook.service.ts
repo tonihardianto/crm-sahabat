@@ -1,7 +1,9 @@
 import prisma from "../lib/prisma";
 import { emitNewMessage, emitNewTicket } from "../lib/socket";
 import { generateTicketNumber } from "../utils/generateTicketNumber";
-import { markAsRead } from "../lib/whatsapp";
+import { markAsRead, getMediaUrl, downloadMedia } from "../lib/whatsapp";
+import fs from "fs";
+import path from "path";
 
 // ============================================================
 // Types — WhatsApp Cloud API Webhook Payload
@@ -154,12 +156,46 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
     const type = mapMessageType(waMessage.type);
     const body = extractMessageBody(waMessage);
 
+    // Download media jika bukan TEXT
+    let mediaUrl: string | undefined;
+    if (type !== "TEXT") {
+        const mediaId =
+            waMessage.image?.id ||
+            waMessage.video?.id ||
+            waMessage.document?.id ||
+            waMessage.audio?.id;
+
+        if (mediaId) {
+            try {
+                const { url, mime_type } = await getMediaUrl(mediaId);
+                const { buffer, contentType } = await downloadMedia(url);
+
+                // Tentukan ekstensi dari mime type
+                const ext = (contentType || mime_type).split("/")[1]?.split(";")[0] || "bin";
+                const filename = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+
+                // Pastikan folder uploads ada
+                const uploadsDir = path.join(process.cwd(), "uploads");
+                if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+                fs.writeFileSync(path.join(uploadsDir, filename), buffer);
+
+                const appUrl = process.env.APP_URL || "https://crm.sahabatmedia.co.id";
+                mediaUrl = `${appUrl}/uploads/${filename}`;
+                console.log(`[Webhook] Media saved: ${mediaUrl}`);
+            } catch (err) {
+                console.error(`[Webhook] Failed to download media ${mediaId}:`, err);
+            }
+        }
+    }
+
     const message = await prisma.message.create({
         data: {
             ticketId,
             direction: "INBOUND",
             type,
             body,
+            mediaUrl: mediaUrl || null,
             wamid: waMessage.id,
             timestamp: new Date(parseInt(waMessage.timestamp) * 1000),
         },
