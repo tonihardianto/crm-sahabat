@@ -41,6 +41,9 @@ export function validateSignature(req: Request, res: Response, next: NextFunctio
 
     if (!isValid) {
         console.warn("[Webhook] Invalid signature");
+        console.warn("[Webhook] Received :", signature);
+        console.warn("[Webhook] Expected  :", expectedSignature);
+        console.warn("[Webhook] Body bytes:", rawBody.length);
         res.status(403).json({ error: "Invalid signature" });
         return;
     }

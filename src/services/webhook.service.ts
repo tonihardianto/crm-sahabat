@@ -77,9 +77,11 @@ async function findOrCreateContact(waId: string, profileName: string) {
         });
     }
 
-    // Buat kontak baru
-    contact = await prisma.contact.create({
-        data: {
+    // Gunakan upsert untuk menghindari race condition jika pesan datang bersamaan
+    contact = await prisma.contact.upsert({
+        where: { waId },
+        update: {},
+        create: {
             waId,
             phoneNumber: waId,
             name: profileName || "Unknown",
