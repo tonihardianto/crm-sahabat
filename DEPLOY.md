@@ -107,6 +107,14 @@ Isi:
     ProxyPass /api http://localhost:3000/api
     ProxyPassReverse /api http://localhost:3000/api
 
+    # Serve media uploads langsung dari Apache (lebih efisien)
+    Alias /uploads /var/www/crm/uploads
+    <Directory /var/www/crm/uploads>
+        Options -Indexes
+        AllowOverride None
+        Require all granted
+    </Directory>
+
     # Socket.IO WebSocket
     RewriteEngine On
     RewriteCond %{HTTP:Upgrade} websocket [NC]

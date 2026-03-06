@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon } from 'lucide-react';
+import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile } from 'lucide-react';
+import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -85,8 +86,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [templates, setTemplates] = useState<TemplateData[]>([]);
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachPreview, setAttachPreview] = useState<string | null>(null);
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
     const imageInputRef = useRef<HTMLInputElement>(null);
     const docInputRef = useRef<HTMLInputElement>(null);
+    const emojiPickerRef = useRef<HTMLDivElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -154,6 +157,22 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             handleSend();
         }
     };
+
+    const handleEmojiClick = (emoji: string) => {
+        setInputText(prev => prev + emoji);
+    };
+
+    // Close emoji picker on outside click
+    useEffect(() => {
+        if (!showEmojiPicker) return;
+        const handler = (e: MouseEvent) => {
+            if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+                setShowEmojiPicker(false);
+            }
+        };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, [showEmojiPicker]);
 
     const handlePickTemplate = (tpl: TemplateData) => {
         setInputText(tpl.bodyText);
@@ -435,7 +454,21 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         rows={1}
                         className="min-h-[36px] py-2"
                     />
-                    <InputGroupAddon align="inline-end" className="pr-1">
+                    <InputGroupAddon align="inline-end" className="pr-1 relative">
+                        {showEmojiPicker && (
+                            <div ref={emojiPickerRef} className="absolute bottom-10 right-0 z-50 w-[320px] rounded-xl border border-border bg-popover shadow-lg">
+                                <EmojiPicker onSelect={handleEmojiClick} />
+                            </div>
+                        )}
+                        <InputGroupButton
+                            size="icon-sm"
+                            variant="ghost"
+                            onClick={() => setShowEmojiPicker(p => !p)}
+                            className="text-muted-foreground hover:text-foreground"
+                            title="Emoji"
+                        >
+                            <Smile className="w-4 h-4" />
+                        </InputGroupButton>
                         <InputGroupButton
                             size={"icon-sm"}
                             variant={((inputText.trim() || attachedFile) && (windowOpen || isInternal)) ? 'default' : 'ghost'}
