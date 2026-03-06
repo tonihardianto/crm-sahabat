@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile } from 'lucide-react';
+import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
@@ -54,6 +54,35 @@ function groupMessagesByDate(messages: Message[]): Record<string, Message[]> {
         groups[key].push(msg);
     }
     return groups;
+}
+
+function getFileExtension(filename: string): string {
+    return filename.split('.').pop()?.toUpperCase() || 'FILE';
+}
+
+function DocBubble({ url, filename, variant }: { url: string; filename: string; variant: 'inbound' | 'outbound' }) {
+    const ext = getFileExtension(filename);
+    const isPdf = ext === 'PDF';
+    const isWord = ['DOC', 'DOCX'].includes(ext);
+    const isExcel = ['XLS', 'XLSX'].includes(ext);
+
+    const iconBg = isPdf ? 'bg-red-500' : isWord ? 'bg-blue-500' : isExcel ? 'bg-green-600' : 'bg-gray-500';
+    const textColor = variant === 'outbound' ? 'text-white' : 'text-foreground';
+    const subColor = variant === 'outbound' ? 'text-blue-100/70' : 'text-muted-foreground';
+    const borderColor = variant === 'outbound' ? 'border-blue-400/20' : 'border-border';
+
+    return (
+        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-2 rounded-xl border ${borderColor} hover:opacity-80 transition-opacity mb-1 min-w-[200px] max-w-[260px]`}>
+            <div className={`${iconBg} rounded-lg w-10 h-10 flex items-center justify-center shrink-0`}>
+                <span className="text-white text-[10px] font-bold">{ext}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className={`text-xs font-medium truncate ${textColor}`}>{filename}</p>
+                <p className={`text-[10px] ${subColor}`}>{ext} Document</p>
+            </div>
+            <Download className={`w-4 h-4 shrink-0 ${subColor}`} />
+        </a>
+    );
 }
 
 function is24hWindowOpen(messages: Message[]): boolean {
@@ -300,13 +329,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
                                                     <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:underline mb-1">
-                                                        <File className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs truncate max-w-[180px]">{msg.body}</span>
-                                                    </a>
+                                                    <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="inbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm text-foreground whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.body) && <p className="text-xs text-muted-foreground mt-1">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-xs text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
@@ -328,10 +354,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
                                                     <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-200 hover:underline mb-1">
-                                                        <File className="w-4 h-4 shrink-0" />
-                                                        <span className="text-xs truncate max-w-[180px]">{msg.body}</span>
-                                                    </a>
+                                                    <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="outbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm text-white whitespace-pre-wrap">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-xs text-blue-100/70 mt-1">{msg.body}</p>}
