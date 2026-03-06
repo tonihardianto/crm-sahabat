@@ -107,7 +107,7 @@ export function UsersPage() {
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-background">
             {/* Header */}
-            <div className="px-8 py-6 border-b border-border bg-card/50 shrink-0 flex items-center justify-between">
+            <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border bg-card/50 shrink-0 flex items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center">
                         <Shield className="w-4 h-4 text-violet-400" />
@@ -123,7 +123,7 @@ export function UsersPage() {
             </div>
 
             <ScrollArea className="flex-1 overflow-y-auto">
-                <div className="px-8 py-6">
+                <div className="px-4 md:px-8 py-4 md:py-6">
                     {/* Search */}
                     <div className="mb-4">
                         <Input
@@ -146,6 +146,7 @@ export function UsersPage() {
                                     <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 </div>
                             ) : (
+                                <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -218,6 +219,7 @@ export function UsersPage() {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

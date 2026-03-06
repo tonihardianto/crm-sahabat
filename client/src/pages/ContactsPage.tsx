@@ -85,8 +85,8 @@ export function ContactsPage() {
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-background">
             {/* Header */}
-            <div className="px-8 py-5 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
-                <div className="flex items-center justify-between mb-4">
+            <div className="px-4 md:px-8 py-4 md:py-5 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
+                <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center">
                             <Users className="w-5 h-5 text-emerald-400" />
@@ -108,7 +108,7 @@ export function ContactsPage() {
 
             {/* Table */}
             <ScrollArea className="flex-1">
-                <div className="px-8 py-4">
+                <div className="px-4 md:px-8 py-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -118,6 +118,7 @@ export function ContactsPage() {
                             {search ? 'No contacts found' : 'Belum ada data contact.'}
                         </div>
                     ) : (
+                        <div className="overflow-x-auto rounded-md border border-border">
                         <Table>
                             <TableHeader>
                                 <TableRow>
@@ -167,6 +168,7 @@ export function ContactsPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     )}
                 </div>
             </ScrollArea>

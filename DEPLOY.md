@@ -173,7 +173,7 @@ pm2 logs crm-backend
 
 ```bash
 # Cek apakah backend berjalan
-curl https://crm.sahabatmedia.co.id/api/webhook?hub.mode=subscribe&hub.verify_token=TOKEN_KAMU&hub.challenge=test
+curl https://crm.sahabatmedia.co.id/api/webhook?hub.mode=subscribe&hub.verify_token=5zthAa1xT5YCGCwWDuYOWdqL&hub.challenge=test
 # Harus mengembalikan: test
 ```
 

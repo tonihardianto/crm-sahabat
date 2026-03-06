@@ -11,6 +11,7 @@ interface ChatWindowProps {
     ticket: Ticket | null;
     onClaimTicket: (ticketId: string) => void;
     onMessageSent: () => void;
+    onBack?: () => void;
 }
 
 interface TemplateData {
@@ -69,7 +70,7 @@ function getWindowTimeLeft(messages: Message[]): string | null {
     return `${hours}h ${mins}m`;
 }
 
-export function ChatWindow({ ticket, onClaimTicket, onMessageSent }: ChatWindowProps) {
+export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: ChatWindowProps) {
     const [inputText, setInputText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [sending, setSending] = useState(false);
@@ -139,8 +140,16 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent }: ChatWindowP
     return (
         <div className="flex-1 flex flex-col bg-background min-w-0">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
-                <div className="flex items-center gap-3 min-w-0">
+            <div className="flex items-center justify-between px-3 md:px-5 py-3 border-b border-border bg-card/50 backdrop-blur-sm">
+                <div className="flex items-center gap-2 md:gap-3 min-w-0">
+                    {onBack && (
+                        <button
+                            onClick={onBack}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                    )}
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shrink-0">
                         {ticket.contact.name.charAt(0).toUpperCase()}
                     </div>
@@ -174,7 +183,16 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent }: ChatWindowP
                         {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
                     </Button>
                 </div>
+                
             </div>
+            {!windowOpen && (
+                <div className="flex items-center mt-2 mx-3 gap-2 px-3 py-2 -mb-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 text-center" />
+                    <p className="text-xs text-destructive text-center">
+                        24-hour window tertutup. Hanya bisa kirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.
+                    </p>
+                </div>
+            )}     
 
             {/* Messages */}
             <ScrollArea className="flex-1 px-5 py-4 overflow-y-auto">
@@ -228,14 +246,14 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent }: ChatWindowP
 
             {/* Input Area */}
             <div className="px-5 py-3 border-t border-border bg-card/50">
-                {!windowOpen && (
+                {/* {!windowOpen && (
                     <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-destructive/10 border border-destructive/20">
                         <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
                         <p className="text-xs text-destructive">
                             24-hour window tertutup. Hanya bisa kirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.
                         </p>
                     </div>
-                )}
+                )} */}
 
                 <div className="flex items-center gap-2 mb-2">
                     <Button size="sm" variant={!windowOpen ? "ghost" : (!isInternal && !showTemplatePicker ? "default" : "secondary")}

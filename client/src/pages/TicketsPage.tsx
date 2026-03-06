@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { TicketList } from '@/components/TicketList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ContextPanel } from '@/components/ContextPanel';
@@ -6,12 +7,16 @@ import { useSocket } from '@/hooks/useSocket';
 import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export function TicketsPage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
     const [loading, setLoading] = useState(true);
+    const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const { user } = useAuth();
+    const isMobile = useMediaQuery('(max-width: 767px)');
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const loadTickets = useCallback(async () => {
         try {
@@ -28,10 +33,16 @@ export function TicketsPage() {
         try {
             const data = await fetchTicketById(ticketId);
             setActiveTicket(data);
+            setSearchParams({ id: ticketId }, { replace: true });
         } catch (err) {
             console.error('Failed to load ticket detail:', err);
         }
-    }, []);
+    }, [setSearchParams]);
+
+    const handleSelectTicket = useCallback((t: Ticket) => {
+        loadTicketDetail(t.id);
+        setMobileView('chat');
+    }, [loadTicketDetail]);
 
     const handleNewMessage = useCallback(
         (data: { ticketId: string }) => {
@@ -58,6 +69,16 @@ export function TicketsPage() {
     });
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
+
+    // Restore active ticket from URL on mount
+    useEffect(() => {
+        const idFromUrl = searchParams.get('id');
+        if (idFromUrl) {
+            loadTicketDetail(idFromUrl);
+            if (isMobile) setMobileView('chat');
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleClaimTicket = async (ticketId: string) => {
         try {
@@ -87,22 +108,32 @@ export function TicketsPage() {
     }
 
     return (
-        <>
-            <TicketList
-                tickets={tickets}
-                activeTicketId={activeTicket?.id || null}
-                onSelectTicket={(t) => loadTicketDetail(t.id)}
-                onNewTicket={handleNewOutboundTicket}
-            />
-            <ChatWindow
-                ticket={activeTicket}
-                onClaimTicket={handleClaimTicket}
-                onMessageSent={handleRefresh}
-            />
-            <ContextPanel
-                ticket={activeTicket}
-                onTicketUpdated={handleRefresh}
-            />
-        </>
+        <div className="flex h-full overflow-hidden">
+            {/* TicketList: full width on mobile when in list view, fixed width on desktop */}
+            <div className={`${isMobile ? (mobileView === 'list' ? 'flex w-full' : 'hidden') : 'flex'} flex-col`}>
+                <TicketList
+                    tickets={tickets}
+                    activeTicketId={activeTicket?.id || null}
+                    onSelectTicket={handleSelectTicket}
+                    onNewTicket={handleNewOutboundTicket}
+                />
+            </div>
+
+            {/* ChatWindow + ContextPanel: full width on mobile when in chat view */}
+            <div className={`${isMobile ? (mobileView === 'chat' ? 'flex w-full' : 'hidden') : 'flex flex-1'} overflow-hidden`}>
+                <ChatWindow
+                    ticket={activeTicket}
+                    onClaimTicket={handleClaimTicket}
+                    onMessageSent={handleRefresh}
+                    onBack={isMobile ? () => setMobileView('list') : undefined}
+                />
+                {!isMobile && (
+                    <ContextPanel
+                        ticket={activeTicket}
+                        onTicketUpdated={handleRefresh}
+                    />
+                )}
+            </div>
+        </div>
     );
 }

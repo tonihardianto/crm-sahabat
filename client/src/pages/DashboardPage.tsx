@@ -130,13 +130,13 @@ export function DashboardPage() {
     return (
         <div className="flex-1 flex flex-col min-h-0 bg-background">
             {/* Header */}
-            <div className="px-8 py-6 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
+            <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
                 <h3 className="text-xl font-bold text-foreground">Dashboard</h3>
                 {/* <p className="text-sm text-muted-foreground mt-0.5">Ringkasan performa sistem CRM</p> */}
             </div>
 
             <ScrollArea className="flex-1 overflow-y-auto">
-                <div className="px-8 py-6 space-y-8">
+                <div className="px-4 md:px-8 py-4 md:py-6 space-y-6 md:space-y-8">
                     {/* Summary Cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
                         {summaryCards.map((card) => (
@@ -241,6 +241,7 @@ export function DashboardPage() {
                                     <div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                 </div>
                             ) : (
+                                <div className="overflow-x-auto">
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
@@ -291,6 +292,7 @@ export function DashboardPage() {
                                         ))}
                                     </TableBody>
                                 </Table>
+                                </div>
                             )}
                         </CardContent>
                     </Card>

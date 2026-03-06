@@ -1,9 +1,10 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { Headset, LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, LogOut } from 'lucide-react';
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
-const navItems = [
+const generalNavItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/tickets', icon: MessageSquare, label: 'Tickets' },
     { to: '/clients', icon: Building2, label: 'Clients' },
@@ -11,104 +12,109 @@ const navItems = [
     { to: '/templates', icon: FileText, label: 'Templates' },
 ];
 
-export function Sidebar() {
-    const { user, logout } = useAuth();
-    const navigate = useNavigate();
+function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
+    const { user } = useAuth();
+    return (
+        <div className={`space-y-6 ${collapsed ? 'px-2' : 'px-4'}`}>
+            <div>
+                {!collapsed && <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">General</h3>}
+                <nav className="space-y-0.5">
+                    {generalNavItems.map(({ to, icon: Icon, label }) => (
+                        <NavLink
+                            key={to}
+                            to={to}
+                            end={to === '/'}
+                            onClick={onNavigate}
+                            title={collapsed ? label : undefined}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                } ${collapsed ? 'justify-center' : ''}`
+                            }
+                        >
+                            <Icon className="w-4 h-4 shrink-0" />
+                            {!collapsed && label}
+                        </NavLink>
+                    ))}
+                </nav>
+            </div>
 
-    const handleLogout = async () => {
-        await logout();
-        navigate('/login', { replace: true });
-    };
+            {user?.role === 'ADMIN' && (
+                <div>
+                    {!collapsed && <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Admin</h3>}
+                    <nav className="space-y-0.5">
+                        <NavLink
+                            to="/users"
+                            onClick={onNavigate}
+                            title={collapsed ? 'User Management' : undefined}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                    ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400'
+                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                } ${collapsed ? 'justify-center' : ''}`
+                            }
+                        >
+                            <Shield className="w-4 h-4 shrink-0" />
+                            {!collapsed && 'User Management'}
+                        </NavLink>
+                    </nav>
+                </div>
+            )}
+
+            {!collapsed && (
+                <div>
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Custom Filters</h3>
+                    <nav className="space-y-0.5">
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-left">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 ml-1" />
+                            Active Tickets
+                        </button>
+                        <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-left">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 ml-1" />
+                            Pending Templates
+                        </button>
+                    </nav>
+                </div>
+            )}
+        </div>
+    );
+}
+
+interface SidebarProps {
+    mobileOpen?: boolean;
+    onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
+    const [collapsed, setCollapsed] = useState(false);
 
     return (
-        <aside className="w-16 flex flex-col items-center py-4 bg-card border-r border-border shrink-0">
-            {/* Logo */}
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center mb-6">
-                <Headset className="w-5 h-5 text-white" />
-            </div>
+        <>
+            {/* Mobile: Sheet drawer */}
+            <Sheet open={mobileOpen} onOpenChange={(open) => !open && onMobileClose?.()}>
+                <SheetContent side="left" className="w-64 p-0 pt-4">
+                    <div className="px-4 mb-4">
+                        <span className="font-semibold text-base tracking-tight text-foreground">CRM Sahabat</span>
+                    </div>
+                    <NavItems onNavigate={onMobileClose} />
+                </SheetContent>
+            </Sheet>
 
-            {/* Navigation */}
-            <nav className="flex-1 flex flex-col items-center gap-1">
-                {navItems.map(({ to, icon: Icon, label }) => (
-                    <Tooltip key={to}>
-                        <TooltipTrigger asChild>
-                            <NavLink
-                                to={to}
-                                end={to === '/'}
-                                className={({ isActive }) =>
-                                    `w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
-                                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                                    }`
-                                }
-                            >
-                                <Icon className="w-5 h-5" />
-                            </NavLink>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{label}</TooltipContent>
-                    </Tooltip>
-                ))}
-
-                {/* Admin only: Users */}
-                {user?.role === 'ADMIN' && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <NavLink
-                                to="/users"
-                                className={({ isActive }) =>
-                                    `w-11 h-11 flex items-center justify-center rounded-xl transition-all duration-200 ${isActive
-                                        ? 'bg-violet-600 text-white shadow-lg shadow-violet-500/20'
-                                        : 'text-muted-foreground hover:text-foreground hover:bg-accent'
-                                    }`
-                                }
-                            >
-                                <Shield className="w-5 h-5" />
-                            </NavLink>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">Users (Admin)</TooltipContent>
-                    </Tooltip>
-                )}
-            </nav>
-
-            {/* Bottom: user avatar + logout */}
-            <div className="mt-auto flex flex-col items-center gap-3">
-                {/* Live indicator */}
-                <div className="flex flex-col items-center gap-0.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-[9px] text-emerald-400 font-medium">Live</span>
+            {/* Desktop: collapsible sidebar */}
+            <aside className={`bg-card border-r border-border shrink-0 flex-col overflow-y-auto hidden md:flex transition-all duration-200 ${collapsed ? 'w-14' : 'w-64'}`}>
+                <div className={`flex items-center py-3 ${collapsed ? 'justify-center px-2' : 'justify-end px-3'}`}>
+                    <button
+                        onClick={() => setCollapsed(c => !c)}
+                        className="w-7 h-7 rounded-md flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                        title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                    </button>
                 </div>
-
-                {/* User avatar with tooltip */}
-                {user && (
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-border flex items-center justify-center text-xs font-bold text-foreground cursor-default">
-                                {user.name.slice(0, 2).toUpperCase()}
-                            </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">
-                            <div className="text-xs space-y-0.5">
-                                <div className="font-semibold">{user.name}</div>
-                                <div className="text-muted-foreground">{user.email}</div>
-                                <div className="text-muted-foreground">{user.role}</div>
-                            </div>
-                        </TooltipContent>
-                    </Tooltip>
-                )}
-
-                {/* Logout */}
-                <Tooltip>
-                    <TooltipTrigger asChild>
-                        <button
-                            onClick={handleLogout}
-                            className="w-11 h-11 flex items-center justify-center rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
-                    </TooltipTrigger>
-                    <TooltipContent side="right">Logout</TooltipContent>
-                </Tooltip>
-            </div>
-        </aside>
+                <NavItems collapsed={collapsed} />
+                <div className="mt-auto pb-4" />
+            </aside>
+        </>
     );
 }
