@@ -1,17 +1,24 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle } from 'lucide-react';
+import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon } from 'lucide-react';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  Alert,
+  AlertDescription,
+} from "@/components/reui/alert"
 
 interface ChatWindowProps {
     ticket: Ticket | null;
     onClaimTicket: (ticketId: string) => void;
     onMessageSent: () => void;
     onBack?: () => void;
+    showContextPanel?: boolean;
+    onToggleContextPanel?: () => void;
 }
 
 interface TemplateData {
@@ -70,12 +77,16 @@ function getWindowTimeLeft(messages: Message[]): string | null {
     return `${hours}h ${mins}m`;
 }
 
-export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: ChatWindowProps) {
+export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showContextPanel, onToggleContextPanel }: ChatWindowProps) {
     const [inputText, setInputText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [sending, setSending] = useState(false);
     const [showTemplatePicker, setShowTemplatePicker] = useState(false);
     const [templates, setTemplates] = useState<TemplateData[]>([]);
+    const [attachedFile, setAttachedFile] = useState<File | null>(null);
+    const [attachPreview, setAttachPreview] = useState<string | null>(null);
+    const imageInputRef = useRef<HTMLInputElement>(null);
+    const docInputRef = useRef<HTMLInputElement>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -93,21 +104,48 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
     const timeLeft = ticket ? getWindowTimeLeft(ticket.messages) : null;
 
     const handleSend = async () => {
-        if (!inputText.trim() || !ticket) return;
+        if (!ticket) return;
+        if (!inputText.trim() && !attachedFile) return;
         if (!windowOpen && !isInternal) {
             alert('24-hour window sudah tertutup. Gunakan Template Message atau Internal Note.');
             return;
         }
         setSending(true);
         try {
-            await apiSendMessage(ticket.id, inputText.trim(), isInternal ? 'INTERNAL' : 'OUTBOUND');
-            setInputText('');
+            if (attachedFile) {
+                await apiSendMedia(ticket.id, attachedFile, inputText.trim());
+                setAttachedFile(null);
+                setAttachPreview(null);
+                setInputText('');
+            } else {
+                await apiSendMessage(ticket.id, inputText.trim(), isInternal ? 'INTERNAL' : 'OUTBOUND');
+                setInputText('');
+            }
             onMessageSent();
         } catch (err) {
             console.error('Failed to send message:', err);
         } finally {
             setSending(false);
         }
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setAttachedFile(file);
+        setIsInternal(false);
+        setShowTemplatePicker(false);
+        if (file.type.startsWith('image/')) {
+            setAttachPreview(URL.createObjectURL(file));
+        } else {
+            setAttachPreview(null);
+        }
+        e.target.value = '';
+    };
+
+    const clearAttachment = () => {
+        setAttachedFile(null);
+        setAttachPreview(null);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -125,7 +163,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
 
     if (!ticket) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-background">
+            <div className="flex-1 flex items-center justify-center">
                 <div className="text-center">
                     <MessageCircle className="w-16 h-16 text-muted mx-auto mb-4" />
                     <h3 className="text-lg font-medium text-muted-foreground mb-1">No Ticket Selected</h3>
@@ -182,16 +220,32 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
                         <Shield className="w-3.5 h-3.5" />
                         {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
                     </Button>
+                    {onToggleContextPanel && !showContextPanel && (
+                        <button
+                            onClick={onToggleContextPanel}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                            title="Tampilkan panel"
+                        >
+                            <PanelRightOpen className="w-6 h-6 text-primary" />
+                        </button>
+                    )}
                 </div>
                 
             </div>
             {!windowOpen && (
-                <div className="flex items-center mt-2 mx-3 gap-2 px-3 py-2 -mb-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                    <AlertTriangle className="w-4 h-4 text-destructive shrink-0 text-center" />
-                    <p className="text-xs text-destructive text-center">
-                        24-hour window tertutup. Hanya bisa kirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.
-                    </p>
+                <div className='flex items-center justify-center'>
+                    <div>
+                        <Alert variant="destructive" className='items-center mx-3 my-2 w-fit py-1'>
+                    <CircleAlertIcon />
+                    {/* <AlertTitle>Payment Failed</AlertTitle> */}
+                    <AlertDescription>
+                        <p>Pesan kadaluwarsa. Hanya bisa mengirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.</p>
+                    </AlertDescription>
+                </Alert>
+                    </div>
+                    
                 </div>
+                
             )}     
 
             {/* Messages */}
@@ -218,7 +272,22 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
                                     ) : msg.direction === 'INBOUND' ? (
                                         <div className="max-w-[70%]">
                                             <div className="px-4 py-2.5 rounded-2xl rounded-bl-md bg-muted border border-border">
-                                                <p className="text-sm text-foreground whitespace-pre-wrap">{msg.body}</p>
+                                                {(msg.type === 'IMAGE') && msg.mediaUrl ? (
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
+                                                    </a>
+                                                ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
+                                                    <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
+                                                ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
+                                                    <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
+                                                ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-400 hover:underline mb-1">
+                                                        <File className="w-4 h-4 shrink-0" />
+                                                        <span className="text-xs truncate max-w-[180px]">{msg.body}</span>
+                                                    </a>
+                                                ) : null}
+                                                {msg.type === 'TEXT' && <p className="text-sm text-foreground whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.body) && <p className="text-xs text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
@@ -231,7 +300,22 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
                                                         <span className="text-[10px] text-blue-200/70">{msg.sentBy.name}</span>
                                                     </div>
                                                 )}
-                                                <p className="text-sm text-white whitespace-pre-wrap">{msg.body}</p>
+                                                {(msg.type === 'IMAGE') && msg.mediaUrl ? (
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
+                                                    </a>
+                                                ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
+                                                    <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
+                                                ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
+                                                    <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
+                                                ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
+                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-blue-200 hover:underline mb-1">
+                                                        <File className="w-4 h-4 shrink-0" />
+                                                        <span className="text-xs truncate max-w-[180px]">{msg.body}</span>
+                                                    </a>
+                                                ) : null}
+                                                {msg.type === 'TEXT' && <p className="text-sm text-white whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-xs text-blue-100/70 mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-blue-200/50 mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
@@ -246,30 +330,6 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
 
             {/* Input Area */}
             <div className="px-5 py-3 border-t border-border bg-card/50">
-                {/* {!windowOpen && (
-                    <div className="flex items-center gap-2 px-3 py-2 mb-2 rounded-lg bg-destructive/10 border border-destructive/20">
-                        <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />
-                        <p className="text-xs text-destructive">
-                            24-hour window tertutup. Hanya bisa kirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.
-                        </p>
-                    </div>
-                )} */}
-
-                <div className="flex items-center gap-2 mb-2">
-                    <Button size="sm" variant={!windowOpen ? "ghost" : (!isInternal && !showTemplatePicker ? "default" : "secondary")}
-                        disabled={!windowOpen} onClick={() => { setIsInternal(false); setShowTemplatePicker(false); }} className="gap-1.5 text-xs h-7">
-                        <Send className="w-3 h-3" /> Kirim WA
-                    </Button>
-                    <Button size="sm" variant={isInternal ? "default" : "secondary"}
-                        onClick={() => { setIsInternal(true); setShowTemplatePicker(false); }} className="gap-1.5 text-xs h-7 bg-amber-600 hover:bg-amber-500 data-[active=false]:bg-secondary" data-active={isInternal}>
-                        <StickyNote className="w-3 h-3" /> Internal Note
-                    </Button>
-                    <Button size="sm" variant={showTemplatePicker ? "default" : "secondary"}
-                        onClick={() => setShowTemplatePicker(!showTemplatePicker)} className="gap-1.5 text-xs h-7">
-                        <FileText className="w-3 h-3" /> Templates
-                    </Button>
-                </div>
-
                 {showTemplatePicker && (
                     <div className="mb-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-card divide-y divide-border">
                         {templates.length === 0 ? (
@@ -289,22 +349,104 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack }: Cha
                     </div>
                 )}
 
-                <div className={`flex items-end gap-2 rounded-xl p-1 border transition-colors ${isInternal ? 'border-amber-500/30 bg-amber-500/5' : 'border-border bg-card'}`}>
-                    <Textarea
+                {/* File Preview */}
+                {attachedFile && (
+                    <div className="mb-2 flex items-center gap-3 px-3 py-2 rounded-xl border border-border bg-muted/50">
+                        {attachPreview ? (
+                            <img src={attachPreview} alt="preview" className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                        ) : attachedFile.type.startsWith('audio/') ? (
+                            <Music className="w-8 h-8 text-blue-400 shrink-0" />
+                        ) : attachedFile.type.startsWith('video/') ? (
+                            <Film className="w-8 h-8 text-purple-400 shrink-0" />
+                        ) : (
+                            <File className="w-8 h-8 text-muted-foreground shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium truncate">{attachedFile.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{(attachedFile.size / 1024).toFixed(0)} KB</p>
+                        </div>
+                        <button onClick={clearAttachment} className="p-1 rounded-md hover:bg-accent">
+                            <X className="w-4 h-4 text-muted-foreground" />
+                        </button>
+                    </div>
+                )}
+
+                <InputGroup className={`rounded-xl ${isInternal ? 'border-amber-500/30 bg-amber-500/5' : ''}`}>
+                    <InputGroupAddon className="pl-1">
+                        <input
+                            ref={imageInputRef}
+                            type="file"
+                            accept="image/*,video/*,audio/*"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        <input
+                            ref={docInputRef}
+                            type="file"
+                            accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar"
+                            className="hidden"
+                            onChange={handleFileChange}
+                        />
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild className='ms-2'>
+                                <InputGroupButton
+                                    size="icon-sm"
+                                    variant="ghost"
+                                    className="text-muted-foreground hover:text-foreground"
+                                >
+                                    <Plus className="size-4" />
+                                </InputGroupButton>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent side="top" align="start" sideOffset={12} className="w-52">
+                                {windowOpen && (
+                                    <>
+                                        <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
+                                            <ImageIcon className="size-4" />
+                                            <span>Kirim Gambar / Video</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => docInputRef.current?.click()}>
+                                            <File className="size-4" />
+                                            <span>Kirim Dokumen</span>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                    </>
+                                )}
+                                <DropdownMenuItem onClick={() => { setShowTemplatePicker(p => !p); setIsInternal(false); }}>
+                                    <FileText className="size-4" />
+                                    <span>Templates</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setIsInternal(p => !p); setShowTemplatePicker(false); clearAttachment(); }}>
+                                    <StickyNote className="size-4" />
+                                    <span>{isInternal ? 'Batalkan Internal Note' : 'Internal Note'}</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        {isInternal && (
+                            <span className="text-[10px] font-semibold text-amber-400 pr-1">Note</span>
+                        )}
+                    </InputGroupAddon>
+                    <InputGroupTextarea
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={!windowOpen && !isInternal ? 'Window tertutup — pilih Template atau Internal Note' : isInternal ? 'Write internal note...' : 'Type a message...'}
-                        disabled={!windowOpen && !isInternal}
+                        placeholder={attachedFile ? 'Tambah caption (opsional)...' : (!windowOpen && !isInternal ? 'Window tertutup — pilih Template atau Internal Note' : isInternal ? 'Write internal note...' : 'Type a message...')}
+                        disabled={!windowOpen && !isInternal && !attachedFile}
                         rows={1}
-                        className="flex-1 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 min-h-[36px]"
+                        className="min-h-[36px] py-2"
                     />
-                    <Button size="icon" variant={inputText.trim() && (windowOpen || isInternal) ? (isInternal ? "default" : "default") : "ghost"}
-                        onClick={handleSend} disabled={!inputText.trim() || sending || (!windowOpen && !isInternal)}
-                        className={`shrink-0 ${isInternal && inputText.trim() ? 'bg-amber-500 hover:bg-amber-400' : ''}`}>
-                        <Send className="w-4 h-4" />
-                    </Button>
-                </div>
+                    <InputGroupAddon align="inline-end" className="pr-1">
+                        <InputGroupButton
+                            size={"icon-sm"}
+                            variant={((inputText.trim() || attachedFile) && (windowOpen || isInternal)) ? 'default' : 'ghost'}
+                            onClick={handleSend}
+                            disabled={(!inputText.trim() && !attachedFile) || sending || (!windowOpen && !isInternal && !attachedFile)}
+                            className={isInternal && inputText.trim() ? 'bg-amber-500 hover:bg-amber-400 mr-2' : 'mr-2'}
+                        >
+                            <SendHorizonal className="w-10 h-10" />
+                        </InputGroupButton>
+                    </InputGroupAddon>
+                </InputGroup>
             </div>
         </div>
     );

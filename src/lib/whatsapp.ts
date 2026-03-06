@@ -116,3 +116,50 @@ export async function markAsRead(messageId: string): Promise<void> {
         }),
     });
 }
+
+/**
+ * Kirim media message (image, document, audio, video) via URL publik
+ */
+export async function sendMediaMessage(
+    to: string,
+    type: "image" | "document" | "audio" | "video",
+    mediaUrl: string,
+    caption?: string,
+    filename?: string
+): Promise<{ wamid: string }> {
+    const { phoneNumberId, accessToken } = getConfig();
+
+    const mediaPayload: Record<string, unknown> = { link: mediaUrl };
+    if (caption && (type === "image" || type === "document" || type === "video")) {
+        mediaPayload.caption = caption;
+    }
+    if (filename && type === "document") {
+        mediaPayload.filename = filename;
+    }
+
+    const response = await fetch(`${BASE_URL}/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to,
+            type,
+            [type]: mediaPayload,
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        console.error("[WhatsApp API] Media send failed:", JSON.stringify(error, null, 2));
+        throw new Error(`WhatsApp API error: ${response.status} ${response.statusText}`);
+    }
+
+    const result = (await response.json()) as { messages?: { id: string }[] };
+    const wamid = result.messages?.[0]?.id || null;
+    console.log(`[WhatsApp API] Media (${type}) sent to ${to}, wamid: ${wamid}`);
+    return { wamid: wamid! };
+}

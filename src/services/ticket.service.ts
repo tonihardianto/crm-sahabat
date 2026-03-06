@@ -1,13 +1,11 @@
 import prisma from "../lib/prisma";
 
 /**
- * Ambil semua tiket aktif (status != RESOLVED), sorted by pesan terbaru.
+ * Ambil semua tiket, sorted by pesan terbaru.
  */
 export async function getActiveTickets() {
     return prisma.ticket.findMany({
-        where: {
-            status: { not: "RESOLVED" },
-        },
+        where: {},
         include: {
             contact: {
                 include: { client: true },
@@ -21,6 +19,13 @@ export async function getActiveTickets() {
             messages: {
                 orderBy: { timestamp: "desc" },
                 take: 1, // Hanya ambil pesan terakhir untuk preview
+            },
+            _count: {
+                select: {
+                    messages: {
+                        where: { isRead: false, direction: "INBOUND" },
+                    },
+                },
             },
         },
         orderBy: { updatedAt: "desc" },

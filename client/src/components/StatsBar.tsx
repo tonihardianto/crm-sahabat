@@ -1,33 +1,27 @@
-import { useEffect, useState } from 'react';
 import { BarChart3, AlertTriangle, Clock, Inbox, UserCheck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import type { Ticket } from '@/lib/api';
 
-interface Stats {
-    totalActive: number;
-    unassigned: number;
-    status: Record<string, number>;
-    priority: Record<string, number>;
+interface StatsBarProps {
+    tickets: Ticket[];
 }
 
-export function StatsBar() {
-    const [stats, setStats] = useState<Stats | null>(null);
-
-    useEffect(() => {
-        fetch('/api/stats')
-            .then((r) => r.json())
-            .then(setStats)
-            .catch(console.error);
-    }, []);
-
-    if (!stats) return null;
+export function StatsBar({ tickets }: StatsBarProps) {
+    const totalActive = tickets.length;
+    const statusCount = tickets.reduce<Record<string, number>>((acc, t) => {
+        acc[t.status] = (acc[t.status] || 0) + 1;
+        return acc;
+    }, {});
+    const unassigned = tickets.filter(t => !t.claimedById).length;
+    const urgentCount = tickets.filter(t => t.priority === 'URGENT').length;
 
     const cards = [
-        { label: 'Total Aktif', value: stats.totalActive, icon: BarChart3, color: 'text-blue-400' },
-        { label: 'New', value: stats.status['NEW'] || 0, icon: Inbox, color: 'text-sky-400' },
-        { label: 'Open', value: stats.status['OPEN'] || 0, icon: Clock, color: 'text-emerald-400' },
-        { label: 'Pending', value: stats.status['PENDING'] || 0, icon: Clock, color: 'text-amber-400' },
-        { label: 'Urgent', value: stats.priority['URGENT'] || 0, icon: AlertTriangle, color: 'text-red-400' },
-        { label: 'Unclaimed', value: stats.unassigned, icon: UserCheck, color: 'text-purple-400' },
+        { label: 'Total Aktif', value: totalActive, icon: BarChart3, color: 'text-blue-400' },
+        { label: 'New', value: statusCount['NEW'] || 0, icon: Inbox, color: 'text-sky-400' },
+        { label: 'Open', value: statusCount['OPEN'] || 0, icon: Clock, color: 'text-emerald-400' },
+        { label: 'Pending', value: statusCount['PENDING'] || 0, icon: Clock, color: 'text-amber-400' },
+        { label: 'Urgent', value: urgentCount, icon: AlertTriangle, color: 'text-red-400' },
+        { label: 'Unclaimed', value: unassigned, icon: UserCheck, color: 'text-purple-400' },
     ];
 
     return (

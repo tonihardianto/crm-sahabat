@@ -1,4 +1,4 @@
-import { Building2, Tag, ExternalLink, ChevronDown } from 'lucide-react';
+import { Tag, ExternalLink, ChevronDown, X } from 'lucide-react';
 import type { Ticket } from '@/lib/api';
 import { updateTicket } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 interface ContextPanelProps {
     ticket: Ticket | null;
     onTicketUpdated: () => void;
+    onClose?: () => void;
 }
 
 const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -50,7 +51,7 @@ function SelectField({
     );
 }
 
-export function ContextPanel({ ticket, onTicketUpdated }: ContextPanelProps) {
+export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelProps) {
     if (!ticket) {
         return (
             <aside className="w-[320px] min-w-[280px] border-l border-border bg-background flex items-center justify-center">
@@ -70,13 +71,26 @@ export function ContextPanel({ ticket, onTicketUpdated }: ContextPanelProps) {
 
     return (
         <aside className="w-[320px] min-w-[280px] border-l border-border bg-background flex flex-col">
+            {/* Header with close button */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+                <span className="text-sm font-semibold text-foreground">Ticket Detail</span>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        className="w-7 h-7 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                        title="Sembunyikan panel"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
             <ScrollArea className="flex-1 overflow-y-auto">
                 {/* Client Detail */}
-                <div className="p-5 border-b border-border">
-                    <div className="flex items-center gap-2 mb-4">
+                <div className="p-3 border-b border-border">
+                    {/* <div className="flex items-center gap-2 mb-4">
                         <Building2 className="w-4 h-4 text-blue-400" />
                         <h3 className="text-sm font-semibold text-foreground">Client Detail</h3>
-                    </div>
+                    </div> */}
 
                     <div className="space-y-3">
                         <Card className="py-2 px-3 gap-0">

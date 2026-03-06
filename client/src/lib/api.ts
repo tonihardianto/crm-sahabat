@@ -22,6 +22,7 @@ export interface Ticket {
     assignedAgent: { id: string; name: string } | null;
     claimedBy: { id: string; name: string } | null;
     messages: Message[];
+    _count?: { messages: number };
 }
 
 export interface Contact {
@@ -80,6 +81,28 @@ export async function sendMessage(
         body: JSON.stringify({ body, direction, sentById }),
     });
     if (!res.ok) throw new Error('Failed to send message');
+    return res.json();
+}
+
+export async function markMessagesRead(ticketId: string): Promise<void> {
+    await apiFetch(`${API_BASE}/tickets/${ticketId}/messages/read`, { method: 'PATCH' });
+}
+
+export async function sendMediaMessage(
+    ticketId: string,
+    file: File,
+    caption: string,
+    sentById?: string
+): Promise<Message> {
+    const form = new FormData();
+    form.append('file', file);
+    if (caption) form.append('caption', caption);
+    if (sentById) form.append('sentById', sentById);
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/messages/media`, {
+        method: 'POST',
+        body: form,
+    });
+    if (!res.ok) throw new Error('Failed to send media message');
     return res.json();
 }
 

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
 import cookieParser from "cookie-parser";
 import webhookRoutes from "./routes/webhook.routes";
 import ticketRoutes from "./routes/ticket.routes";
@@ -25,6 +26,9 @@ app.use(
 );
 app.use(cors({ origin: true, credentials: true }));
 app.use(cookieParser());
+
+// ---- Static file serving for media uploads ----
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // ---- Public Routes (no auth required) ----
 app.use("/api/webhook", webhookRoutes);

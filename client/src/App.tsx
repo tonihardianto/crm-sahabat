@@ -20,7 +20,7 @@ function AppLayout() {
       <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />
-        <main className="flex-1 min-w-0 overflow-hidden bg-muted/20">
+        <main className="flex-1 min-w-0 overflow-hidden h-full bg-muted/20">
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/tickets" element={<TicketsPage />} />

@@ -4,7 +4,7 @@ import { TicketList } from '@/components/TicketList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ContextPanel } from '@/components/ContextPanel';
 import { useSocket } from '@/hooks/useSocket';
-import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket } from '@/lib/api';
+import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket, markMessagesRead } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -14,6 +14,7 @@ export function TicketsPage() {
     const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
     const [loading, setLoading] = useState(true);
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
+    const [showContextPanel, setShowContextPanel] = useState(true);
     const { user } = useAuth();
     const isMobile = useMediaQuery('(max-width: 767px)');
     const [searchParams, setSearchParams] = useSearchParams();
@@ -42,6 +43,12 @@ export function TicketsPage() {
     const handleSelectTicket = useCallback((t: Ticket) => {
         loadTicketDetail(t.id);
         setMobileView('chat');
+        // Mark as read instantly in local state so badge disappears immediately
+        setTickets(prev => prev.map(tk =>
+            tk.id === t.id ? { ...tk, _count: { messages: 0 } } : tk
+        ));
+        // Fire-and-forget API call to persist in DB
+        markMessagesRead(t.id).catch(console.error);
     }, [loadTicketDetail]);
 
     const handleNewMessage = useCallback(
@@ -98,7 +105,7 @@ export function TicketsPage() {
 
     if (loading) {
         return (
-            <div className="flex-1 flex items-center justify-center bg-background">
+            <div className="h-full w-full flex items-center justify-center bg-background">
                 <div className="text-center">
                     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                     <p className="text-sm text-muted-foreground">Loading tickets...</p>
@@ -126,11 +133,14 @@ export function TicketsPage() {
                     onClaimTicket={handleClaimTicket}
                     onMessageSent={handleRefresh}
                     onBack={isMobile ? () => setMobileView('list') : undefined}
+                    showContextPanel={showContextPanel}
+                    onToggleContextPanel={() => setShowContextPanel(p => !p)}
                 />
-                {!isMobile && (
+                {!isMobile && showContextPanel && (
                     <ContextPanel
                         ticket={activeTicket}
                         onTicketUpdated={handleRefresh}
+                        onClose={() => setShowContextPanel(false)}
                     />
                 )}
             </div>
