@@ -61,18 +61,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const socket = io('/', { transports: ['websocket', 'polling'] });
         socketRef.current = socket;
 
-        socket.on('message:new', ({ message, ticket }: { message: { direction: string; body?: string; type?: string }; ticket?: { contact?: { name: string } } }) => {
+        socket.on('message:new', ({ message, contact }: { message: { direction: string; body?: string; type?: string }; contact?: { name: string } }) => {
             if (message.direction !== 'INBOUND') return;
 
             playNotificationSound();
             setUnreadCount((prev) => prev + 1);
 
-            const contactName = ticket?.contact?.name ?? 'Kontak';
+            const contactName = contact?.name ?? 'Kontak';
             const msgPreview = message.type !== 'TEXT'
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
 
-            toast.message(`💬 Pesan dari ${contactName}`, {
+            toast(`💬 Pesan dari ${contactName}`, {
                 description: msgPreview || undefined,
                 duration: 5000,
             });
@@ -91,8 +91,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setUnreadCount((prev) => prev + 1);
 
             const contactName = ticket.contact?.name ?? 'kontak';
-            toast.message(`🎫 Tiket baru`, {
-                description: `Dari ${contactName}`,
+            toast(`🎫 Tiket baru — dari ${contactName}`, {
                 duration: 5000,
             });
 

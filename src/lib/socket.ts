@@ -32,8 +32,12 @@ export function getIO(): SocketIOServer {
 /**
  * Emit event: pesan baru masuk
  */
-export function emitNewMessage(ticketId: string, message: Record<string, unknown>): void {
-    getIO().emit("message:new", { ticketId, message });
+export function emitNewMessage(
+    ticketId: string,
+    message: Record<string, unknown>,
+    contact?: { name: string }
+): void {
+    getIO().emit("message:new", { ticketId, message, contact });
 }
 
 /**

@@ -283,7 +283,7 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                         });
                     }
 
-                    emitNewMessage(ticket.id, message);
+                    emitNewMessage(ticket.id, message, { name: contact.name });
 
                     console.log(
                         `[Webhook] Message processed: ${waMessage.id} → Ticket ${ticket.ticketNumber}`
