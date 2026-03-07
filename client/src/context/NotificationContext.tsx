@@ -75,9 +75,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             toast(`💬 Pesan dari ${contactName}`, {
                 description: msgPreview || undefined,
                 duration: 5000,
-                classNames: {
-                    toast: 'border-blue-500/30 bg-blue-500/10',
-                    title: 'text-blue-300',
+                style: {
+                    background: 'rgba(59,130,246,0.12)',
+                    border: '1px solid rgba(59,130,246,0.3)',
+                    color: '#93c5fd',
                 },
             });
 
@@ -97,9 +98,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             const contactName = ticket.contact?.name ?? 'kontak';
             toast(`🎫 Tiket baru — dari ${contactName}`, {
                 duration: 5000,
-                classNames: {
-                    toast: 'border-amber-500/30 bg-amber-500/10',
-                    title: 'text-amber-300',
+                style: {
+                    background: 'rgba(245,158,11,0.12)',
+                    border: '1px solid rgba(245,158,11,0.3)',
+                    color: '#fcd34d',
                 },
             });
 
