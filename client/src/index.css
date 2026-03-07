@@ -182,3 +182,49 @@
 .bubble-bg {
   background-color: var(--buble-bg);
 }
+
+/* Toast Sonner */
+
+/* SUCCESS */
+[data-sonner-toast][data-type="success"] {
+  background-color: #37c66b !important; /* Hijau */
+}
+
+[data-sonner-toast][data-type="success"] [data-title],
+[data-sonner-toast][data-type="success"] [data-icon],
+[data-sonner-toast][data-type="success"] [data-sonner-description] {
+  color: #fff !important;
+}
+
+/* INFO */
+[data-sonner-toast][data-type="info"] {
+  background-color: #4c80ef !important; /* Biru */
+}
+
+[data-sonner-toast][data-type="info"] [data-title],
+[data-sonner-toast][data-type="info"] [data-icon],
+[data-sonner-toast][data-type="info"] [data-sonner-description] {
+  color: #fff !important;
+}
+
+/* WARNING */
+[data-sonner-toast][data-type="warning"] {
+  background-color: #f59e0b !important; /* Kuning / Amber */
+}
+
+[data-sonner-toast][data-type="warning"] [data-title],
+[data-sonner-toast][data-type="warning"] [data-icon],
+[data-sonner-toast][data-type="warning"] [data-sonner-description] {
+  color: #fff !important;
+}
+
+/* ERROR */
+[data-sonner-toast][data-type="error"] {
+  background-color: #f66161 !important; /* Merah */
+}
+
+[data-sonner-toast][data-type="error"] [data-title],
+[data-sonner-toast][data-type="error"] [data-icon],
+[data-sonner-toast][data-type="error"] [data-sonner-description] {
+  color: #fff !important;
+}

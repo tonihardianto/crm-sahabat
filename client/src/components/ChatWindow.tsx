@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, Hand } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, Hand, HandGrab } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
@@ -263,7 +263,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         onClick={() => onClaimTicket(ticket.id)}
                         className="gap-1.5"
                     >
-                        <Hand className="w-3 h-3" />
+                        <HandGrab className="w-3 h-3" />
                         {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
                     </Button>
                     {onToggleContextPanel && !showContextPanel && (

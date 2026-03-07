@@ -72,9 +72,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
 
+            // toast(`💬 Pesan dari ${contactName}`, {
+            //     description: msgPreview || undefined,
+            //     duration: 5000,
+            // });
+
             toast(`💬 Pesan dari ${contactName}`, {
                 description: msgPreview || undefined,
                 duration: 5000,
+                classNames: {
+                    toast: 'border-blue-500/30 bg-blue-500/10',
+                    title: 'text-blue-300',
+                },
             });
 
             if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
