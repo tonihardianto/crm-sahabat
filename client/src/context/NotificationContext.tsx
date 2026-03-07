@@ -72,9 +72,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
 
-            toast.custom(() => (
-                <div style={{ background: 'rgba(30,58,138,0.85)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#93c5fd', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>💬 Pesan dari {contactName}</div>
+            toast.custom((t) => (
+                <div style={{ background: 'rgba(30,58,138,0.85)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#93c5fd', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
+                    <button onClick={() => toast.dismiss(t)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', color: '#93c5fd', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    <div style={{ fontWeight: 600, fontSize: '14px', paddingRight: '20px' }}>💬 Pesan dari {contactName}</div>
                     {msgPreview && <div style={{ fontSize: '12px', color: '#bfdbfe', marginTop: '4px', opacity: 0.85 }}>{msgPreview}</div>}
                 </div>
             ), { duration: 5000 });
@@ -93,9 +94,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setUnreadCount((prev) => prev + 1);
 
             const contactName = ticket.contact?.name ?? 'kontak';
-            toast.custom(() => (
-                <div style={{ background: 'rgba(120,53,15,0.85)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#fcd34d', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
-                    <div style={{ fontWeight: 600, fontSize: '14px' }}>🎫 Tiket baru</div>
+            toast.custom((t) => (
+                <div style={{ background: 'rgba(120,53,15,0.85)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#fcd34d', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
+                    <button onClick={() => toast.dismiss(t)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', color: '#fcd34d', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                    <div style={{ fontWeight: 600, fontSize: '14px', paddingRight: '20px' }}>🎫 Tiket baru</div>
                     <div style={{ fontSize: '12px', color: '#fde68a', marginTop: '4px', opacity: 0.85 }}>Dari {contactName}</div>
                 </div>
             ), { duration: 5000 });
