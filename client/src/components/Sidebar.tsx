@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const generalNavItems = [
@@ -14,6 +15,7 @@ const generalNavItems = [
 
 function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
     const { user } = useAuth();
+    const { unreadCount } = useNotification();
     return (
         <div className={`space-y-6 ${collapsed ? 'px-2' : 'px-4'}`}>
             <div>
@@ -33,7 +35,14 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                                 } ${collapsed ? 'justify-center' : ''}`
                             }
                         >
-                            <Icon className="w-4 h-4 shrink-0" />
+                            <div className="relative shrink-0">
+                                <Icon className="w-4 h-4" />
+                                {to === '/tickets' && unreadCount > 0 && (
+                                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold px-0.5 leading-none">
+                                        {unreadCount > 99 ? '99+' : unreadCount}
+                                    </span>
+                                )}
+                            </div>
                             {!collapsed && label}
                         </NavLink>
                     ))}

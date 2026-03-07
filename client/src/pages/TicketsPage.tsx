@@ -8,6 +8,7 @@ import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket, markMessa
 import type { Ticket } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { useNotification } from '@/context/NotificationContext';
 
 export function TicketsPage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -17,6 +18,12 @@ export function TicketsPage() {
     const [showContextPanel, setShowContextPanel] = useState(true);
     const { user } = useAuth();
     const isMobile = useMediaQuery('(max-width: 767px)');
+    const { resetUnread } = useNotification();
+
+    // Reset unread badge whenever the tickets page is visible
+    useEffect(() => {
+        resetUnread();
+    }, [resetUnread]);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const loadTickets = useCallback(async () => {

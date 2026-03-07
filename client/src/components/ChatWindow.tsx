@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, Shield, MessageCircle, StickyNote, User2, FileText, Clock, AlertTriangle, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, Hand } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
@@ -8,10 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Alert,
-  AlertDescription,
-} from "@/components/reui/alert"
+
 
 interface ChatWindowProps {
     ticket: Ticket | null;
@@ -67,17 +64,17 @@ function DocBubble({ url, filename, variant }: { url: string; filename: string; 
     const isExcel = ['XLS', 'XLSX'].includes(ext);
 
     const iconBg = isPdf ? 'bg-red-500' : isWord ? 'bg-blue-900' : isExcel ? 'bg-green-600' : 'bg-gray-500';
-    const textColor = variant === 'outbound' ? 'text-white' : 'text-white';
+    const textColor = variant === 'outbound' ? 'text-white/80' : 'text-primary/80';
     const subColor = variant === 'outbound' ? 'text-blue-100/70' : 'text-muted-foreground';
     const borderColor = variant === 'outbound' ? 'border-blue-400/20' : 'border-border';
 
     return (
-        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1 rounded-xl border ${borderColor} hover:opacity-80 transition-opacity bg-primary/50 mb-1 min-w-[200px] max-w-[260px]`}>
+        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1 rounded-lg border ${borderColor} hover:opacity-80 transition-opacity ${variant === 'outbound' ? 'bg-secondary/20' : 'bg-primary/20'} mb-1 min-w-[200px] max-w-[260px]`}>
             <div className={`${iconBg} rounded-lg w-10 h-10 flex items-center justify-center shrink-0`}>
                 <span className="text-white text-[10px] font-bold">{ext}</span>
             </div>
             <div className="flex-1 min-w-0">
-                <p className={`text-xs font-medium truncate ${textColor}`}>{filename}</p>
+                <p className={`text-sm font-medium truncate ${textColor}`}>{filename}</p>
                 <p className={`text-[10px] ${subColor}`}>{ext} Document</p>
             </div>
             <Download className={`w-4 h-4 shrink-0 ${subColor}`} />
@@ -246,10 +243,11 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         <p className="text-xs text-muted-foreground truncate">
                             {ticket.contact.client.name} · {ticket.ticketNumber}
                         </p>
+                        
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
-                    {windowOpen ? (
+                    {/* {windowOpen ? (
                         <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1">
                             <Clock className="w-3 h-3" /> {timeLeft}
                         </Badge>
@@ -257,7 +255,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         <Badge variant="destructive" className="gap-1">
                             <AlertTriangle className="w-3 h-3" /> Window Closed
                         </Badge>
-                    )}
+                    )} */}
                     <Button
                         size="sm"
                         variant={ticket.claimedById ? "secondary" : "default"}
@@ -265,7 +263,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         onClick={() => onClaimTicket(ticket.id)}
                         className="gap-1.5"
                     >
-                        <Shield className="w-3.5 h-3.5" />
+                        <Hand className="w-3 h-3" />
                         {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
                     </Button>
                     {onToggleContextPanel && !showContextPanel && (
@@ -280,20 +278,25 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 </div>
                 
             </div>
-            {!windowOpen && (
+            {!windowOpen ? (
                 <div className='flex items-center justify-center'>
                     <div>
-                        <Alert variant="destructive" className='items-center mx-3 my-2 w-fit py-1'>
-                    <CircleAlertIcon />
-                    {/* <AlertTitle>Payment Failed</AlertTitle> */}
-                    <AlertDescription>
-                        <p>Pesan kadaluwarsa. Hanya bisa mengirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.</p>
-                    </AlertDescription>
-                </Alert>
+                        <Badge variant="outline" className='items-center text-center text-destructive/90 bg-destructive/20 mx-3 my-2 w-fit py-1'>
+                            <CircleAlertIcon />
+                            {/* <AlertDescription> */}
+                                <p>Pesan kadaluwarsa. Hanya bisa mengirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.</p>
+                            {/* </AlertDescription> */}
+                        </Badge>
                     </div>
                     
                 </div>
                 
+            ) : (
+                <div className='flex items-center justify-center w-full mt-2 -pb-1 -mb-2 bg-transparent'>
+                    <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1">
+                        <Clock className="w-3 h-3" />Time Left: {timeLeft}
+                    </Badge>
+                </div>
             )}     
 
             {/* Messages */}
@@ -309,17 +312,17 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             {msgs.map((msg) => (
                                 <div key={msg.id} className={`flex mb-2 ${msg.direction === 'INBOUND' ? 'justify-start' : msg.direction === 'OUTBOUND' ? 'justify-end' : 'justify-center'}`}>
                                     {msg.direction === 'INTERNAL' ? (
-                                        <div className="max-w-[85%] px-2 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                        <div className="max-w-[85%] px-2 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                                             <div className="flex items-center gap-1.5 mb-1">
                                                 <StickyNote className="w-3 h-3 text-amber-400" />
                                                 <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
                                             </div>
-                                            <p className="text-sm text-amber-200/90 whitespace-pre-wrap">{msg.body}</p>
-                                            <span className="text-[10px] text-amber-400/60 mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                            <p className="text-sm text-amber-500/90 whitespace-pre-wrap">{msg.body}</p>
+                                            <span className="text-[10px] text-amber-500/60 mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                         </div>
                                     ) : msg.direction === 'INBOUND' ? (
                                         <div className="max-w-[70%]">
-                                            <div className="px-1 py-1.5 rounded-xl rounded-bl-md bg-muted border border-border">
+                                            <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border">
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                                                         <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
@@ -332,13 +335,13 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="inbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-foreground whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-xs text-muted-foreground mt-1">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
                                     ) : (
                                         <div className="max-w-[70%]">
-                                            <div className="px-1 py-1.5 rounded-xl rounded-br-md bg-blue-600 border border-blue-500/30">
+                                            <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30">
                                                 {msg.sentBy && (
                                                     <div className="flex items-center gap-1 mb-1">
                                                         <User2 className="w-3 h-3 text-blue-200/70" />
@@ -357,7 +360,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="outbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-white whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-blue-100/70 mt-1">{msg.body}</p>}
+                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-blue-200/50 mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>

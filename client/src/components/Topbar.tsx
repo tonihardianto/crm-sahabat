@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
-import { Headset, Search, Plus, User, Menu, Sun, Moon } from 'lucide-react';
+import { Headset, Search, Plus, User, Menu, Sun, Moon, Bell } from 'lucide-react';
+import { useNotification } from '@/context/NotificationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +21,7 @@ interface TopbarProps {
 export function Topbar({ onMenuClick }: TopbarProps) {
     const { user, logout } = useAuth();
     const { theme, toggle } = useTheme();
+    const { unreadCount, requestPermission, notifyPermission } = useNotification();
 
     return (
         <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 shrink-0 top-0 sticky z-50">
@@ -57,6 +59,20 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                     <Plus className="w-3.5 h-3.5" />
                     Create
                 </Button>
+
+                {/* Notification bell */}
+                <button
+                    onClick={notifyPermission === 'default' ? requestPermission : undefined}
+                    className="relative w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+                    title="Notifikasi"
+                >
+                    <Bell className="w-4 h-4" />
+                    {unreadCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold px-0.5 leading-none">
+                            {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                    )}
+                </button>
 
                 {/* Dark/Light toggle */}
                 <button

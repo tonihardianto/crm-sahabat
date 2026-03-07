@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
+import { NotificationProvider } from '@/context/NotificationContext';
 import { PrivateRoute } from '@/components/PrivateRoute';
 import { Topbar } from '@/components/Topbar';
 import { Sidebar } from '@/components/Sidebar';
@@ -43,6 +44,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <NotificationProvider>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
@@ -54,6 +56,7 @@ export default function App() {
             </PrivateRoute>
           } />
         </Routes>
+        </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>
   );
