@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { toast } from 'sonner';
 
 interface NotificationContextValue {
     unreadCount: number;
@@ -60,15 +61,25 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const socket = io('/', { transports: ['websocket', 'polling'] });
         socketRef.current = socket;
 
-        socket.on('message:new', ({ message }: { message: { direction: string; body?: string } }) => {
+        socket.on('message:new', ({ message, ticket }: { message: { direction: string; body?: string; type?: string }; ticket?: { contact?: { name: string } } }) => {
             if (message.direction !== 'INBOUND') return;
 
             playNotificationSound();
             setUnreadCount((prev) => prev + 1);
 
+            const contactName = ticket?.contact?.name ?? 'Kontak';
+            const msgPreview = message.type !== 'TEXT'
+                ? `[${message.type ?? 'Media'}]`
+                : (message.body?.slice(0, 60) ?? '');
+
+            toast.message(`💬 Pesan dari ${contactName}`, {
+                description: msgPreview || undefined,
+                duration: 5000,
+            });
+
             if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-                new Notification('Pesan Baru', {
-                    body: message.body || 'Media diterima',
+                new Notification(`Pesan dari ${contactName}`, {
+                    body: msgPreview || 'Media diterima',
                     icon: '/favicon.ico',
                     tag: 'crm-message',
                 });
@@ -79,9 +90,15 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             playNotificationSound();
             setUnreadCount((prev) => prev + 1);
 
+            const contactName = ticket.contact?.name ?? 'kontak';
+            toast.message(`🎫 Tiket baru`, {
+                description: `Dari ${contactName}`,
+                duration: 5000,
+            });
+
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 new Notification('Tiket Baru', {
-                    body: `Tiket baru dari ${ticket.contact?.name ?? 'kontak'}`,
+                    body: `Tiket baru dari ${contactName}`,
                     icon: '/favicon.ico',
                     tag: 'crm-ticket',
                 });

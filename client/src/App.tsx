@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { Toaster } from 'sonner';
 import { PrivateRoute } from '@/components/PrivateRoute';
 import { Topbar } from '@/components/Topbar';
 import { Sidebar } from '@/components/Sidebar';
@@ -45,6 +46,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+        <Toaster position="top-right" richColors closeButton />
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
