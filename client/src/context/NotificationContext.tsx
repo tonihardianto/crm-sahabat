@@ -72,11 +72,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
 
-            // toast(`💬 Pesan dari ${contactName}`, {
-            //     description: msgPreview || undefined,
-            //     duration: 5000,
-            // });
-
             toast(`💬 Pesan dari ${contactName}`, {
                 description: msgPreview || undefined,
                 duration: 5000,
@@ -102,6 +97,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             const contactName = ticket.contact?.name ?? 'kontak';
             toast(`🎫 Tiket baru — dari ${contactName}`, {
                 duration: 5000,
+                classNames: {
+                    toast: 'border-amber-500/30 bg-amber-500/10',
+                    title: 'text-amber-300',
+                },
             });
 
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {

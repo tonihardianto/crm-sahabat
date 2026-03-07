@@ -46,7 +46,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
-        <Toaster position="top-right" richColors closeButton />
+        <Toaster position="top-right" closeButton />
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
