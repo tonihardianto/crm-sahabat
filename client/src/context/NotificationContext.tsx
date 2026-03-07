@@ -72,15 +72,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
 
-            toast(`💬 Pesan dari ${contactName}`, {
-                description: msgPreview || undefined,
-                duration: 5000,
-                style: {
-                    background: 'rgba(59,130,246,0.12)',
-                    border: '1px solid rgba(59,130,246,0.3)',
-                    color: '#93c5fd',
-                },
-            });
+            toast.custom(() => (
+                <div style={{ background: 'rgba(30,58,138,0.85)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#93c5fd', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>💬 Pesan dari {contactName}</div>
+                    {msgPreview && <div style={{ fontSize: '12px', color: '#bfdbfe', marginTop: '4px', opacity: 0.85 }}>{msgPreview}</div>}
+                </div>
+            ), { duration: 5000 });
 
             if (document.hidden && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 new Notification(`Pesan dari ${contactName}`, {
@@ -96,14 +93,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setUnreadCount((prev) => prev + 1);
 
             const contactName = ticket.contact?.name ?? 'kontak';
-            toast(`🎫 Tiket baru — dari ${contactName}`, {
-                duration: 5000,
-                style: {
-                    background: 'rgba(245,158,11,0.12)',
-                    border: '1px solid rgba(245,158,11,0.3)',
-                    color: '#fcd34d',
-                },
-            });
+            toast.custom(() => (
+                <div style={{ background: 'rgba(120,53,15,0.85)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#fcd34d', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)' }}>
+                    <div style={{ fontWeight: 600, fontSize: '14px' }}>🎫 Tiket baru</div>
+                    <div style={{ fontSize: '12px', color: '#fde68a', marginTop: '4px', opacity: 0.85 }}>Dari {contactName}</div>
+                </div>
+            ), { duration: 5000 });
 
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
                 new Notification('Tiket Baru', {
