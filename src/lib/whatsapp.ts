@@ -118,6 +118,43 @@ export async function markAsRead(messageId: string): Promise<void> {
 }
 
 /**
+ * Edit pesan teks yang sudah terkirim ke pelanggan
+ * Referensi: https://developers.facebook.com/docs/whatsapp/cloud-api/messages/text-messages#edit-a-text-message
+ */
+export async function editTextMessage(
+    to: string,
+    originalWamid: string,
+    newBody: string
+): Promise<void> {
+    const { phoneNumberId, accessToken } = getConfig();
+
+    const response = await fetch(`${BASE_URL}/${phoneNumberId}/messages`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            messaging_product: "whatsapp",
+            recipient_type: "individual",
+            to,
+            type: "text",
+            text: { body: newBody },
+            context: { message_id: originalWamid },
+            status: "edited",
+        }),
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        console.error("[WhatsApp API] Edit message failed:", JSON.stringify(error, null, 2));
+        throw new Error(`WhatsApp API edit error: ${response.status} ${response.statusText}`);
+    }
+
+    console.log(`[WhatsApp API] Message edited, original wamid: ${originalWamid}`);
+}
+
+/**
  * Dapatkan URL download media dari media ID (untuk pesan masuk)
  */
 export async function getMediaUrl(mediaId: string): Promise<{ url: string; mime_type: string }> {

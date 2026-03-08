@@ -4,6 +4,7 @@ import * as messageService from "../services/message.service";
 import { emitEditMessage } from "../lib/socket";
 import prisma from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { editTextMessage } from "../lib/whatsapp";
 
 export async function markMessagesRead(req: Request, res: Response): Promise<void> {
     try {
@@ -111,6 +112,22 @@ export async function editMessage(req: AuthRequest, res: Response): Promise<void
             data: { body: body.trim(), isEdited: true, editedAt: new Date() },
             include: { sentBy: { select: { id: true, name: true } } },
         });
+
+        // Jika OUTBOUND dan ada wamid, edit juga di sisi pelanggan via WhatsApp API
+        if (existing.direction === "OUTBOUND" && existing.wamid) {
+            const ticket = await prisma.ticket.findUnique({
+                where: { id: ticketId },
+                include: { contact: { select: { waId: true, phoneNumber: true } } },
+            });
+            const to = ticket?.contact?.waId || ticket?.contact?.phoneNumber;
+            if (to) {
+                try {
+                    await editTextMessage(to, existing.wamid, body.trim());
+                } catch (err) {
+                    console.error("[Message] WhatsApp edit failed (DB updated anyway):", err);
+                }
+            }
+        }
 
         emitEditMessage(ticketId, updated as unknown as Record<string, unknown>);
         res.json(updated);
