@@ -112,11 +112,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             }
         });
 
-        socket.on('ticket:handover', ({ ticketNumber, contactName, fromAgent, toAgentId, toAgentName }: {
+        socket.on('ticket:handover', ({ ticketNumber, contactName, fromAgent, toAgentName }: {
             ticketNumber: string;
             contactName: string;
             fromAgent: string;
-            toAgentId: string;
             toAgentName: string;
         }) => {
             playNotificationSound();
