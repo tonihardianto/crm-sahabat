@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { sendMessage, markMessagesRead, sendMediaMessage } from "../controllers/message.controller";
+import { sendMessage, markMessagesRead, sendMediaMessage, editMessage } from "../controllers/message.controller";
 
 const uploadDir = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -27,6 +27,9 @@ router.post("/:id/messages", sendMessage);
 
 // PATCH /api/tickets/:id/messages/read
 router.patch("/:id/messages/read", markMessagesRead);
+
+// PATCH /api/tickets/:id/messages/:msgId  — edit pesan
+router.patch("/:id/messages/:msgId", editMessage);
 
 // POST /api/tickets/:id/messages/media
 router.post("/:id/messages/media", upload.single("file"), sendMediaMessage);

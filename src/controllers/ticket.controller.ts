@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import * as ticketService from "../services/ticket.service";
 import { sendTemplateMessage } from "../lib/whatsapp";
-import { emitNewTicket, emitNewMessage } from "../lib/socket";
+import { emitNewTicket, emitNewMessage, emitHandover, emitAssign } from "../lib/socket";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import prisma from "../lib/prisma";
 
@@ -68,6 +68,136 @@ export async function claimTicket(req: AuthRequest, res: Response): Promise<void
     } catch (error) {
         console.error("[Ticket] Error claiming ticket:", error);
         res.status(500).json({ error: "Failed to claim ticket" });
+    }
+}
+
+export async function handoverTicket(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const fromAgentId = req.user?.userId;
+        const { toAgentId } = req.body;
+        const ticketId = req.params.id as string;
+
+        if (!toAgentId) {
+            res.status(400).json({ error: "toAgentId is required" });
+            return;
+        }
+
+        const [ticket, fromAgent, toAgent] = await Promise.all([
+            prisma.ticket.findUnique({ where: { id: ticketId }, include: { contact: { include: { client: true } }, claimedBy: true } }),
+            fromAgentId ? prisma.user.findUnique({ where: { id: fromAgentId } }) : null,
+            prisma.user.findUnique({ where: { id: toAgentId } }),
+        ]);
+
+        if (!ticket) { res.status(404).json({ error: "Ticket not found" }); return; }
+        if (!toAgent) { res.status(404).json({ error: "Target agent not found" }); return; }
+
+        // Update claimedById ke agen tujuan
+        const updated = await prisma.ticket.update({
+            where: { id: ticketId },
+            data: { claimedById: toAgentId, claimedAt: new Date() },
+            include: {
+                contact: { include: { client: true } },
+                claimedBy: { select: { id: true, name: true } },
+                assignedAgent: { select: { id: true, name: true } },
+                messages: { include: { sentBy: { select: { id: true, name: true } } }, orderBy: { timestamp: 'asc' } },
+            },
+        });
+
+        // Buat internal note otomatis
+        const noteBody = `Ticket diserahkan dari ${fromAgent?.name ?? 'Agen'} ke ${toAgent.name}`;
+        const note = await prisma.message.create({
+            data: {
+                ticketId,
+                direction: "INTERNAL",
+                type: "TEXT",
+                body: noteBody,
+                sentById: fromAgentId || null,
+                timestamp: new Date(),
+            },
+            include: { sentBy: { select: { id: true, name: true } } },
+        });
+
+        // Emit socket events
+        emitNewMessage(ticketId, note as unknown as Record<string, unknown>);
+        emitHandover({
+            ticketId,
+            ticketNumber: ticket.ticketNumber,
+            contactName: ticket.contact.name,
+            fromAgent: fromAgent?.name ?? 'Agen',
+            toAgentId,
+            toAgentName: toAgent.name,
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error("[Ticket] Error handover ticket:", error);
+        res.status(500).json({ error: "Failed to handover ticket" });
+    }
+}
+
+/**
+ * POST /api/tickets/:id/assign
+ * Admin meng-assign tiket ke agen tertentu.
+ */
+export async function assignTicket(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const adminId = req.user?.userId;
+        const { agentId } = req.body;
+        const ticketId = req.params.id as string;
+
+        if (!agentId) {
+            res.status(400).json({ error: "agentId is required" });
+            return;
+        }
+
+        const [ticket, agent, admin] = await Promise.all([
+            prisma.ticket.findUnique({ where: { id: ticketId }, include: { contact: { include: { client: true } } } }),
+            prisma.user.findUnique({ where: { id: agentId } }),
+            adminId ? prisma.user.findUnique({ where: { id: adminId } }) : null,
+        ]);
+
+        if (!ticket) { res.status(404).json({ error: "Ticket not found" }); return; }
+        if (!agent) { res.status(404).json({ error: "Agent not found" }); return; }
+
+        const updated = await prisma.ticket.update({
+            where: { id: ticketId },
+            data: { assignedAgentId: agentId },
+            include: {
+                contact: { include: { client: true } },
+                claimedBy: { select: { id: true, name: true } },
+                assignedAgent: { select: { id: true, name: true } },
+                messages: { include: { sentBy: { select: { id: true, name: true } } }, orderBy: { timestamp: 'asc' } },
+            },
+        });
+
+        // Buat internal note otomatis
+        const noteBody = `Tiket di-assign ke ${agent.name} oleh ${admin?.name ?? 'Admin'}`;
+        const note = await prisma.message.create({
+            data: {
+                ticketId,
+                direction: "INTERNAL",
+                type: "TEXT",
+                body: noteBody,
+                sentById: adminId || null,
+                timestamp: new Date(),
+            },
+            include: { sentBy: { select: { id: true, name: true } } },
+        });
+
+        emitNewMessage(ticketId, note as unknown as Record<string, unknown>);
+        emitAssign({
+            ticketId,
+            ticketNumber: ticket.ticketNumber,
+            contactName: ticket.contact.name,
+            agentId,
+            agentName: agent.name,
+            assignedBy: admin?.name ?? 'Admin',
+        });
+
+        res.json(updated);
+    } catch (error) {
+        console.error("[Ticket] Error assigning ticket:", error);
+        res.status(500).json({ error: "Failed to assign ticket" });
     }
 }
 

@@ -5,9 +5,10 @@ import type { Message, Ticket } from '../lib/api';
 interface UseSocketOptions {
     onNewMessage?: (data: { ticketId: string; message: Message }) => void;
     onNewTicket?: (data: { ticket: Ticket }) => void;
+    onMessageEdited?: (data: { ticketId: string; message: Message }) => void;
 }
 
-export function useSocket({ onNewMessage, onNewTicket }: UseSocketOptions) {
+export function useSocket({ onNewMessage, onNewTicket, onMessageEdited }: UseSocketOptions) {
     const socketRef = useRef<Socket | null>(null);
 
     const connect = useCallback(() => {
@@ -56,6 +57,17 @@ export function useSocket({ onNewMessage, onNewTicket }: UseSocketOptions) {
             socket.off('ticket:new', onNewTicket);
         };
     }, [onNewTicket]);
+
+    // Listen for edited messages
+    useEffect(() => {
+        const socket = socketRef.current;
+        if (!socket || !onMessageEdited) return;
+
+        socket.on('message:edited', onMessageEdited);
+        return () => {
+            socket.off('message:edited', onMessageEdited);
+        };
+    }, [onMessageEdited]);
 
     return socketRef;
 }

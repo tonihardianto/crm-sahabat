@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
+import { HandoverDialog } from '@/components/HandoverDialog';
+import { AssignDialog } from '@/components/AssignDialog';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
@@ -113,6 +116,11 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [attachedFile, setAttachedFile] = useState<File | null>(null);
     const [attachPreview, setAttachPreview] = useState<string | null>(null);
     const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+    const [showHandover, setShowHandover] = useState(false);
+    const [showAssign, setShowAssign] = useState(false);
+    const [editingMsg, setEditingMsg] = useState<Message | null>(null);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
     const imageInputRef = useRef<HTMLInputElement>(null);
     const docInputRef = useRef<HTMLInputElement>(null);
     const emojiPickerRef = useRef<HTMLDivElement>(null);
@@ -135,6 +143,24 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const handleSend = async () => {
         if (!ticket) return;
         if (!inputText.trim() && !attachedFile) return;
+
+        // --- Edit mode ---
+        if (editingMsg) {
+            if (!inputText.trim()) return;
+            setSending(true);
+            try {
+                await apiEditMessage(ticket.id, editingMsg.id, inputText.trim());
+                setInputText('');
+                setEditingMsg(null);
+                onMessageSent();
+            } catch (err) {
+                console.error('Failed to edit message:', err);
+            } finally {
+                setSending(false);
+            }
+            return;
+        }
+
         if (!windowOpen && !isInternal) {
             alert('24-hour window sudah tertutup. Gunakan Template Message atau Internal Note.');
             return;
@@ -181,6 +207,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
+        }
+        if (e.key === 'Escape' && editingMsg) {
+            setEditingMsg(null);
+            setInputText('');
         }
     };
 
@@ -256,16 +286,45 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             <AlertTriangle className="w-3 h-3" /> Window Closed
                         </Badge>
                     )} */}
-                    <Button
-                        size="sm"
-                        variant={ticket.claimedById ? "secondary" : "default"}
-                        disabled={!!ticket.claimedById}
-                        onClick={() => onClaimTicket(ticket.id)}
-                        className="gap-1.5"
-                    >
-                        <HandGrab className="w-3 h-3" />
-                        {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="outline" className="gap-1.5">
+                                <HandGrab className="w-3 h-3" />
+                                {ticket.claimedBy ? ticket.claimedBy.name : 'Action'}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                            {/* Claim */}
+                            <DropdownMenuItem
+                                disabled={!!ticket.claimedById}
+                                onClick={() => !ticket.claimedById && onClaimTicket(ticket.id)}
+                                className={ticket.claimedById ? 'opacity-50 cursor-not-allowed' : ''}
+                            >
+                                <HandGrab className="w-4 h-4 mr-2" />
+                                {ticket.claimedBy ? `Claimed: ${ticket.claimedBy.name}` : 'Claim Ticket'}
+                            </DropdownMenuItem>
+
+                            {/* Handover — hanya jika sudah di-claim */}
+                            {ticket.claimedById && (
+                                <DropdownMenuItem onClick={() => setShowHandover(true)}>
+                                    <ArrowLeftRight className="w-4 h-4 mr-2" />
+                                    Handover Tiket
+                                </DropdownMenuItem>
+                            )}
+
+                            {/* Assign To — hanya admin */}
+                            {isAdmin && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem onClick={() => setShowAssign(true)}>
+                                        <UserCheck className="w-4 h-4 mr-2" />
+                                        {ticket.assignedAgent ? `Re-assign (${ticket.assignedAgent.name})` : 'Assign To'}
+                                    </DropdownMenuItem>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                     {onToggleContextPanel && !showContextPanel && (
                         <button
                             onClick={onToggleContextPanel}
@@ -312,13 +371,25 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             {msgs.map((msg) => (
                                 <div key={msg.id} className={`flex mb-2 ${msg.direction === 'INBOUND' ? 'justify-start' : msg.direction === 'OUTBOUND' ? 'justify-end' : 'justify-center'}`}>
                                     {msg.direction === 'INTERNAL' ? (
-                                        <div className="max-w-[85%] px-2 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                        <div className="group relative max-w-[85%] px-2 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
                                             <div className="flex items-center gap-1.5 mb-1">
                                                 <StickyNote className="w-3 h-3 text-amber-400" />
                                                 <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
                                             </div>
                                             <p className="text-sm text-amber-500/90 whitespace-pre-wrap">{msg.body}</p>
-                                            <span className="text-[10px] text-amber-500/60 mt-1 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                            <div className="flex items-center justify-end gap-1 mt-1">
+                                                {msg.isEdited && <span className="text-[10px] text-amber-500/50 italic">diedit</span>}
+                                                <span className="text-[10px] text-amber-500/60">{formatTimestamp(msg.timestamp)}</span>
+                                            </div>
+                                            {msg.type === 'TEXT' && (
+                                                <button
+                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); }}
+                                                    className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
+                                                    title="Edit pesan"
+                                                >
+                                                    <Pencil className="w-3 h-3 text-amber-400" />
+                                                </button>
+                                            )}
                                         </div>
                                     ) : msg.direction === 'INBOUND' ? (
                                         <div className="max-w-[70%]">
@@ -339,8 +410,17 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                         </div>
-                                    ) : (
-                                        <div className="max-w-[70%]">
+                                    ) : (msg.direction === 'OUTBOUND') ? (
+                                        <div className="group relative max-w-[70%] flex items-end gap-1">
+                                            {msg.type === 'TEXT' && (
+                                                <button
+                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); }}
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 shrink-0 mb-1"
+                                                    title="Edit pesan"
+                                                >
+                                                    <Pencil className="w-3 h-3 text-blue-300" />
+                                                </button>
+                                            )}
                                             <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30">
                                                 {msg.sentBy && (
                                                     <div className="flex items-center gap-1 mb-1">
@@ -361,10 +441,13 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-white whitespace-pre-wrap">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
-                                                <span className="text-[10px] text-blue-200/50 mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                                <div className="flex items-center justify-end gap-1">
+                                                    {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}
+                                                    <span className="text-[10px] text-blue-200/50 mt-0">{formatTimestamp(msg.timestamp)}</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
+                                    ) : null}
                                 </div>
                             ))}
                         </div>
@@ -375,6 +458,16 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
 
             {/* Input Area */}
             <div className="px-5 py-3 border-t border-border bg-card/50">
+                {/* Edit mode indicator */}
+                {editingMsg && (
+                    <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+                        <Pencil className="w-3 h-3 text-primary shrink-0" />
+                        <span className="text-xs text-primary font-medium flex-1 truncate">Mengedit pesan: {editingMsg.body}</span>
+                        <button onClick={() => { setEditingMsg(null); setInputText(''); }} className="p-0.5 rounded hover:bg-primary/20">
+                            <X className="w-3.5 h-3.5 text-primary" />
+                        </button>
+                    </div>
+                )}
                 {showTemplatePicker && (
                     <div className="mb-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-card divide-y divide-border">
                         {templates.length === 0 ? (
@@ -507,6 +600,34 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     </InputGroupAddon>
                 </InputGroup>
             </div>
+
+            {/* Handover Dialog */}
+            {showHandover && (
+                <HandoverDialog
+                    ticket={ticket}
+                    open={showHandover}
+                    onClose={() => setShowHandover(false)}
+                    onSuccess={(updated) => {
+                        onMessageSent();
+                        setShowHandover(false);
+                        // Propagate the updated ticket back so caller can refresh state
+                        void updated;
+                    }}
+                />
+            )}
+
+            {/* Assign Dialog */}
+            {showAssign && (
+                <AssignDialog
+                    ticket={ticket}
+                    open={showAssign}
+                    onClose={() => setShowAssign(false)}
+                    onSuccess={() => {
+                        onMessageSent();
+                        setShowAssign(false);
+                    }}
+                />
+            )}
         </div>
     );
 }

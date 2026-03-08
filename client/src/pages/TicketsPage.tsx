@@ -68,6 +68,21 @@ export function TicketsPage() {
         [activeTicket, loadTickets, loadTicketDetail]
     );
 
+    const handleMessageEdited = useCallback(
+        (data: { ticketId: string; message: import('@/lib/api').Message }) => {
+            setActiveTicket(prev => {
+                if (!prev || prev.id !== data.ticketId) return prev;
+                return {
+                    ...prev,
+                    messages: prev.messages.map(m =>
+                        m.id === data.message.id ? { ...m, ...data.message } : m
+                    ),
+                };
+            });
+        },
+        []
+    );
+
     // When a new outbound ticket is created via dialog, add it to list and select it
     const handleNewOutboundTicket = useCallback((ticket: Ticket) => {
         setTickets(prev => {
@@ -80,6 +95,7 @@ export function TicketsPage() {
     useSocket({
         onNewMessage: handleNewMessage,
         onNewTicket: loadTickets,
+        onMessageEdited: handleMessageEdited,
     });
 
     useEffect(() => { loadTickets(); }, [loadTickets]);

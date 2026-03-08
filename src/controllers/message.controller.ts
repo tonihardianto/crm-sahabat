@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import path from "path";
 import * as messageService from "../services/message.service";
+import { emitEditMessage } from "../lib/socket";
+import prisma from "../lib/prisma";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
 export async function markMessagesRead(req: Request, res: Response): Promise<void> {
     try {
@@ -74,5 +77,45 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
     } catch (error) {
         console.error("[Message] Error sending message:", error);
         res.status(500).json({ error: "Failed to send message" });
+    }
+}
+
+/**
+ * PATCH /api/tickets/:id/messages/:msgId
+ * Edit isi pesan OUTBOUND atau INTERNAL (TEXT only).
+ */
+export async function editMessage(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const { id: ticketId, msgId } = req.params as { id: string; msgId: string };
+        const { body } = req.body as { body: string };
+
+        if (!body?.trim()) {
+            res.status(400).json({ error: "body is required" });
+            return;
+        }
+
+        const existing = await prisma.message.findUnique({ where: { id: msgId } });
+        if (!existing) { res.status(404).json({ error: "Message not found" }); return; }
+        if (existing.ticketId !== ticketId) { res.status(400).json({ error: "Message does not belong to this ticket" }); return; }
+        if (!["OUTBOUND", "INTERNAL"].includes(existing.direction)) {
+            res.status(400).json({ error: "Only OUTBOUND or INTERNAL messages can be edited" });
+            return;
+        }
+        if (existing.type !== "TEXT") {
+            res.status(400).json({ error: "Only TEXT messages can be edited" });
+            return;
+        }
+
+        const updated = await prisma.message.update({
+            where: { id: msgId },
+            data: { body: body.trim(), isEdited: true, editedAt: new Date() },
+            include: { sentBy: { select: { id: true, name: true } } },
+        });
+
+        emitEditMessage(ticketId, updated as unknown as Record<string, unknown>);
+        res.json(updated);
+    } catch (error) {
+        console.error("[Message] Error editing message:", error);
+        res.status(500).json({ error: "Failed to edit message" });
     }
 }

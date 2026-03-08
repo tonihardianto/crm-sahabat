@@ -1,10 +1,11 @@
 import { Link } from 'react-router-dom';
-import { Headset, Search, Plus, User, Menu, Sun, Moon, Bell } from 'lucide-react';
+import { Search, Plus, User, Menu, Sun, Moon, Bell } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import logoLight from '@/assets/images/logo-256.png';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -35,10 +36,12 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                     <Menu className="w-5 h-5" />
                 </button>
                 <Link to="/" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                        <Headset className="w-5 h-5 text-white" />
+                    <div className="w-10 h-8 rounded-lg flex items-center justify-center">
+                        {/* <Headset className="w-5 h-5 text-white" /> */}
+                        <img src={logoLight} alt="CRM Sahabat" className="w-6 h-6 object-contain" />
                     </div>
-                    <span className="font-semibold text-base tracking-tight text-foreground hidden sm:block">CRM Sahabat</span>
+                    <span className="font-semibold -ms-4 text-primary text-base tracking-tight text-foreground hidden sm:block">ishaCRM</span>
+
                 </Link>
             </div>
 

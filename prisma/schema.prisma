@@ -141,6 +141,8 @@ model Message {
   mediaUrl    String?          @map("media_url") @db.Text
   sentById    String?          @map("sent_by_id") // Agent yang mengirim (untuk outbound & internal notes)
   isRead      Boolean          @default(false) @map("is_read")
+  isEdited    Boolean          @default(false) @map("is_edited")
+  editedAt    DateTime?        @map("edited_at")
   timestamp   DateTime         @default(now()) // Waktu pesan dikirim/diterima
   deliveredAt DateTime?        @map("delivered_at")
   readAt      DateTime?        @map("read_at")

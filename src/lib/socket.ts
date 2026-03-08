@@ -41,6 +41,27 @@ export function emitNewMessage(
 }
 
 /**
+ * Emit event: ticket di-handover ke agen lain
+ */
+export function emitHandover(payload: Record<string, unknown>): void {
+    getIO().emit("ticket:handover", payload);
+}
+
+/**
+ * Emit event: ticket di-assign ke agen oleh admin
+ */
+export function emitAssign(payload: Record<string, unknown>): void {
+    getIO().emit("ticket:assign", payload);
+}
+
+/**
+ * Emit event: pesan diedit
+ */
+export function emitEditMessage(ticketId: string, message: Record<string, unknown>): void {
+    getIO().emit("message:edited", { ticketId, message });
+}
+
+/**
  * Emit event: tiket baru dibuat
  */
 export function emitNewTicket(ticket: Record<string, unknown>): void {

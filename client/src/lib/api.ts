@@ -52,6 +52,8 @@ export interface Message {
     mediaUrl: string | null;
     sentById: string | null;
     isRead: boolean;
+    isEdited: boolean;
+    editedAt: string | null;
     timestamp: string;
     createdAt: string;
     sentBy: { id: string; name: string } | null;
@@ -130,5 +132,48 @@ export async function claimTicket(ticketId: string, agentId: string): Promise<Ti
         body: JSON.stringify({ agentId }),
     });
     if (!res.ok) throw new Error('Failed to claim ticket');
+    return res.json();
+}
+
+export async function handoverTicket(ticketId: string, toAgentId: string): Promise<Ticket> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/handover`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toAgentId }),
+    });
+    if (!res.ok) throw new Error('Failed to handover ticket');
+    return res.json();
+}
+
+export interface Agent {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+}
+
+export async function fetchAgents(): Promise<Agent[]> {
+    const res = await apiFetch(`${API_BASE}/users`);
+    if (!res.ok) throw new Error('Failed to fetch agents');
+    return res.json();
+}
+
+export async function assignTicket(ticketId: string, agentId: string): Promise<Ticket> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId }),
+    });
+    if (!res.ok) throw new Error('Failed to assign ticket');
+    return res.json();
+}
+
+export async function editMessage(ticketId: string, msgId: string, body: string): Promise<Message> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/messages/${msgId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+    });
+    if (!res.ok) throw new Error('Failed to edit message');
     return res.json();
 }
