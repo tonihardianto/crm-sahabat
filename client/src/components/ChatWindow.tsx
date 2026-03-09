@@ -96,7 +96,7 @@ function DocBubble({ url, filename, variant }: { url: string; filename: string; 
     const borderColor = variant === 'outbound' ? 'border-blue-400/20' : 'border-border';
 
     return (
-        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1 rounded-lg border ${borderColor} hover:opacity-80 transition-opacity ${variant === 'outbound' ? 'bg-secondary/20' : 'bg-primary/20'} mb-1 min-w-[200px] max-w-[260px]`}>
+        <a href={url} target="_blank" rel="noreferrer" className={`flex items-center gap-3 p-1 rounded-lg border ${borderColor} hover:opacity-80 transition-opacity ${variant === 'outbound' ? 'bg-secondary/20' : 'bg-primary/20'} mb-1 min-w-[200px] max-w-[320px]`}>
             <div className={`${iconBg} rounded-lg w-10 h-10 flex items-center justify-center shrink-0`}>
                 <span className="text-white text-[10px] font-bold">{ext}</span>
             </div>
@@ -294,7 +294,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         </button>
                     )}
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                        {ticket.contact.name.charAt(0).toUpperCase()}
+                        {ticket.contact.name.charAt(0).toUpperCase()}{ticket.contact.name.charAt(1).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                         <h3 className="text-sm font-semibold text-foreground truncate">
@@ -400,7 +400,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             <div className="flex-1 relative min-h-0">
                 {/* Floating badge */}
                 {windowOpen ? (
-                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                    <div className="absolute top-1 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
                         <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1 shadow-sm backdrop-blur-sm">
                             <Clock className="w-3 h-3" />Time Left: {timeLeft}
                         </Badge>
@@ -414,7 +414,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     </div>
                 )}
 
-                <ScrollArea className="h-full px-5 py-4 overflow-y-auto" style={chatBg ? { backgroundColor: chatBg } : undefined}>
+                <ScrollArea className="h-full px-5 py-0 overflow-y-auto" style={chatBg ? { backgroundColor: chatBg } : undefined}>
                 <div className="space-y-1 pt-7">
                     {Object.entries(dateGroups).map(([dateKey, msgs]) => (
                         <div key={dateKey}>
@@ -471,8 +471,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
                                                     <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="inbound" />
                                                 ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-foreground whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground">{msg.body}</p>}
+                                                {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-foreground whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-muted-foreground">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
@@ -505,8 +505,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
                                                     <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="outbound" />
                                                 ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-white whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-white/80">{msg.body}</p>}
+                                                {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-white whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-white/80">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
                                                 <div className="flex items-center justify-end gap-1">
                                                     {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}
@@ -517,7 +517,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                             <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                                 <button
                                                     onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                    className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
+                                                    className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center hover:bg-blue-500/40"
                                                     title="Balas pesan"
                                                 >
                                                     <CornerUpLeft className="w-3 h-3 text-blue-300" />
