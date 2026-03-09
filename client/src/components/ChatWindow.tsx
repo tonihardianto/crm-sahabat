@@ -669,7 +669,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     <InputGroupAddon align="inline-end" className="pr-1 relative">
                         {showEmojiPicker && (
                             <div ref={emojiPickerRef} className="absolute bottom-10 right-0 z-50 rounded-xl border border-border shadow-lg overflow-hidden">
-                                <EmojiPicker className="h-[340px] w-[316px]" onEmojiSelect={({ emoji }) => { handleEmojiClick(emoji); setShowEmojiPicker(false); }}>
+                                <EmojiPicker className="h-[340px] w-[266px]" onEmojiSelect={({ emoji }) => { handleEmojiClick(emoji); setShowEmojiPicker(false); }}>
                                     <EmojiPickerSearch />
                                     <EmojiPickerContent />
                                     <EmojiPickerFooter />
