@@ -212,6 +212,7 @@ model ChatTemplate {
   headerText   String?              @map("header_text") @db.Text
   bodyText     String               @map("body_text") @db.Text // Template body dengan placeholder {{1}}, {{2}}, dst.
   footerText   String?              @map("footer_text")
+  buttons      Json?                @map("buttons") // Array of button objects dari Meta
   status       TemplateStatus       @default(PENDING)
   metaId       String?              @unique @map("meta_id") // Template ID dari Meta
   isActive     Boolean              @default(true) @map("is_active")

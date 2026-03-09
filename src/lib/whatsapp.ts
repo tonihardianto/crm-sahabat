@@ -100,6 +100,100 @@ export async function sendTemplateMessage(
     return { wamid: wamid! };
 }
 
+interface MetaTemplateButton {
+    type: "QUICK_REPLY" | "URL" | "PHONE_NUMBER";
+    text: string;
+    url?: string;
+    phone_number?: string;
+}
+
+interface MetaTemplateComponent {
+    type: string;
+    format?: string;
+    text?: string;
+    buttons?: MetaTemplateButton[];
+}
+
+interface MetaTemplate {
+    id: string;
+    name: string;
+    status: string;
+    category: string;
+    language: string;
+    components?: MetaTemplateComponent[];
+}
+
+/**
+ * Ambil daftar template dari Meta Business Account
+ */
+export async function fetchMetaTemplates(): Promise<MetaTemplate[]> {
+    const wabaId = process.env.WABA_ID;
+    if (!wabaId) throw new Error("WABA_ID not configured in .env");
+    const { accessToken } = getConfig();
+
+    const url = `${BASE_URL}/${wabaId}/message_templates?fields=id,name,status,category,language,components&limit=100`;
+    const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(`Meta API error fetching templates: ${JSON.stringify(error)}`);
+    }
+
+    const data = (await response.json()) as { data: MetaTemplate[] };
+    return data.data || [];
+}
+
+/**
+ * Submit template baru ke Meta untuk approval
+ */
+export async function submitMetaTemplate(params: {
+    name: string;
+    category: string;
+    language: string;
+    headerText?: string | null;
+    bodyText: string;
+    footerText?: string | null;
+    buttons?: MetaTemplateButton[];
+}): Promise<{ id: string; status: string }> {
+    const wabaId = process.env.WABA_ID;
+    if (!wabaId) throw new Error("WABA_ID not configured in .env");
+    const { accessToken } = getConfig();
+
+    const components: MetaTemplateComponent[] = [];
+    if (params.headerText) {
+        components.push({ type: "HEADER", format: "TEXT", text: params.headerText });
+    }
+    components.push({ type: "BODY", text: params.bodyText });
+    if (params.footerText) {
+        components.push({ type: "FOOTER", text: params.footerText });
+    }
+    if (params.buttons && params.buttons.length > 0) {
+        components.push({ type: "BUTTONS", buttons: params.buttons });
+    }
+
+    const response = await fetch(`${BASE_URL}/${wabaId}/message_templates`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+            name: params.name,
+            category: params.category,
+            language: params.language,
+            components,
+        }),
+    });
+
+    const result = (await response.json()) as { id: string; status?: string };
+    if (!response.ok) {
+        throw new Error(`Meta template submit error: ${JSON.stringify(result)}`);
+    }
+    return { id: result.id, status: result.status ?? "PENDING" };
+}
+
 /**
  * Mark message as read (centang biru)
  */

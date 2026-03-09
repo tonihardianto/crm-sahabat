@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft } from 'lucide-react';
 import { EmojiPicker, EmojiPickerSearch, EmojiPickerContent, EmojiPickerFooter } from '@/components/ui/emoji-picker';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate } from '@/lib/api';
 import { HandoverDialog } from '@/components/HandoverDialog';
 import { AssignDialog } from '@/components/AssignDialog';
 import { useAuth } from '@/context/AuthContext';
@@ -31,6 +31,8 @@ interface TemplateData {
     name: string;
     bodyText: string;
     category: string;
+    status: string;
+    language: string;
 }
 
 function formatTimestamp(dateStr: string): string {
@@ -144,6 +146,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [showAssign, setShowAssign] = useState(false);
     const [editingMsg, setEditingMsg] = useState<Message | null>(null);
     const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+    const [templateDialog, setTemplateDialog] = useState<{ tpl: TemplateData; vars: Record<number, string> } | null>(null);
+    const [sendingTemplate, setSendingTemplate] = useState(false);
     const { user } = useAuth();
     const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
@@ -261,9 +265,42 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     }, [showEmojiPicker]);
 
     const handlePickTemplate = (tpl: TemplateData) => {
-        setInputText(tpl.bodyText);
         setShowTemplatePicker(false);
-        setIsInternal(false);
+        if (windowOpen) {
+            // Window open: paste bodyText to input as usual
+            setInputText(tpl.bodyText);
+            setIsInternal(false);
+        } else {
+            // Window closed: open variable-fill dialog to send via WA
+            const indices = Array.from(tpl.bodyText.matchAll(/\{\{(\d+)\}\}/g)).map(m => parseInt(m[1]));
+            const unique = [...new Set(indices)].sort((a, b) => a - b);
+            const vars: Record<number, string> = {};
+            unique.forEach(i => { vars[i] = ''; });
+            setTemplateDialog({ tpl, vars });
+        }
+    };
+
+    const handleSendTemplate = async () => {
+        if (!ticket || !templateDialog) return;
+        setSendingTemplate(true);
+        try {
+            const { tpl, vars } = templateDialog;
+            let resolvedBody = tpl.bodyText;
+            const paramEntries = Object.entries(vars).sort(([a], [b]) => parseInt(a) - parseInt(b));
+            paramEntries.forEach(([idx, val]) => {
+                resolvedBody = resolvedBody.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), val || `{{${idx}}}`);
+            });
+            const components: unknown[] = paramEntries.length > 0
+                ? [{ type: 'body', parameters: paramEntries.map(([, val]) => ({ type: 'text', text: val })) }]
+                : [];
+            await apiSendTemplate(ticket.id, tpl.name, tpl.language || 'id', components, resolvedBody);
+            setTemplateDialog(null);
+            onMessageSent();
+        } catch (err) {
+            console.error('Failed to send template:', err);
+        } finally {
+            setSendingTemplate(false);
+        }
     };
 
     if (!ticket) {
@@ -320,7 +357,11 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="outline" className="gap-1.5">
                                 <HandGrab className="w-3 h-3" />
-                                {ticket.claimedBy ? ticket.claimedBy.name : 'Action'}
+                                {ticket.claimedBy
+                                    ? ticket.claimedBy.name
+                                    : ticket.assignedAgent
+                                        ? ticket.assignedAgent.name
+                                        : 'Action'}
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                             </Button>
                         </DropdownMenuTrigger>
@@ -568,15 +609,18 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 )}
                 {showTemplatePicker && (
                     <div className="mb-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-card divide-y divide-border">
-                        {templates.length === 0 ? (
-                            <div className="px-4 py-3 text-xs text-muted-foreground text-center">Belum ada template.</div>
+                        {templates.filter(t => windowOpen || t.status === 'APPROVED').length === 0 ? (
+                            <div className="px-4 py-3 text-xs text-muted-foreground text-center">
+                                {windowOpen ? 'Belum ada template.' : 'Tidak ada template APPROVED. Sync atau buat template baru.'}
+                            </div>
                         ) : (
-                            templates.map((tpl) => (
+                            templates.filter(t => windowOpen || t.status === 'APPROVED').map((tpl) => (
                                 <button key={tpl.id} onClick={() => handlePickTemplate(tpl)}
                                     className="w-full text-left px-4 py-2.5 hover:bg-accent transition-colors cursor-pointer">
                                     <div className="flex items-center gap-2">
                                         <span className="text-xs font-semibold text-foreground">{tpl.name}</span>
                                         <Badge variant="outline" className="text-[10px]">{tpl.category}</Badge>
+                                        {!windowOpen && <Badge variant="outline" className="text-[10px] text-emerald-400 border-emerald-500/30">WA Send</Badge>}
                                     </div>
                                     <p className="text-[11px] text-muted-foreground truncate mt-0.5">{tpl.bodyText}</p>
                                 </button>
@@ -703,6 +747,74 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 </InputGroup>
             </div>
 
+            {/* Template Send Dialog */}
+            {templateDialog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-sm font-semibold text-foreground">Kirim Template via WhatsApp</h3>
+                            <button onClick={() => setTemplateDialog(null)} className="p-1 rounded hover:bg-accent">
+                                <X className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                        </div>
+                        <div className="mb-3 px-3 py-2 rounded-xl bg-muted/50 border border-border">
+                            <p className="text-[10px] font-semibold text-violet-400 mb-1">{templateDialog.tpl.name} · {templateDialog.tpl.category}</p>
+                            <p className="text-xs text-muted-foreground whitespace-pre-wrap">
+                                {Object.entries(templateDialog.vars).reduce((text, [idx, val]) =>
+                                    text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), val
+                                        ? <span className="text-foreground font-medium">{val}</span> as unknown as string
+                                        : `{{${idx}}}`
+                                    ), templateDialog.tpl.bodyText)}
+                            </p>
+                        </div>
+                        {/* Preview with highlighting */}
+                        <div className="mb-3 px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                            <p className="text-[10px] text-blue-300/70 mb-1">Preview pesan:</p>
+                            <p className="text-xs text-foreground whitespace-pre-wrap">
+                                {Object.entries(templateDialog.vars).reduce(
+                                    (text, [idx, val]) => text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), val || `[var ${idx}]`),
+                                    templateDialog.tpl.bodyText
+                                )}
+                            </p>
+                        </div>
+                        {Object.keys(templateDialog.vars).length > 0 && (
+                            <div className="space-y-2 mb-4">
+                                <p className="text-xs font-medium text-muted-foreground">Isi variabel:</p>
+                                {Object.keys(templateDialog.vars).sort((a, b) => parseInt(a) - parseInt(b)).map(idxStr => {
+                                    const idx = parseInt(idxStr);
+                                    return (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <span className="text-xs text-muted-foreground shrink-0 w-14">{`{{${idx}}}`}</span>
+                                            <input
+                                                className="flex-1 h-8 rounded-lg border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                                placeholder={`Nilai untuk {{${idx}}}`}
+                                                value={templateDialog.vars[idx]}
+                                                onChange={(e) => setTemplateDialog(prev => prev ? {
+                                                    ...prev,
+                                                    vars: { ...prev.vars, [idx]: e.target.value }
+                                                } : null)}
+                                            />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={() => setTemplateDialog(null)} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors">
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleSendTemplate}
+                                disabled={sendingTemplate}
+                                className="px-4 py-2 text-sm rounded-lg bg-violet-600 hover:bg-violet-500 text-white font-medium transition-colors disabled:opacity-50"
+                            >
+                                {sendingTemplate ? 'Mengirim...' : 'Kirim via WhatsApp'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Handover Dialog */}
             {showHandover && (
                 <HandoverDialog
@@ -724,9 +836,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     ticket={ticket}
                     open={showAssign}
                     onClose={() => setShowAssign(false)}
-                    onSuccess={() => {
+                    onSuccess={(updated) => {
                         onMessageSent();
                         setShowAssign(false);
+                        void updated;
                     }}
                 />
             )}

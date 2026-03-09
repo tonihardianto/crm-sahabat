@@ -287,7 +287,7 @@ export function AppSettingsPage() {
                 </div>
 
                 {/* ── Right: Live Preview (sticky) ── */}
-                <div className="w-80 shrink-0 border-l border-border bg-card/30 flex flex-col overflow-hidden">
+                <div className="w-180 shrink-0 border-l border-border bg-card/30 flex flex-col overflow-hidden">
                     <div className="px-4 py-3 border-b border-border shrink-0">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</p>
                     </div>

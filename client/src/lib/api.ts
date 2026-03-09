@@ -231,3 +231,23 @@ export async function restoreTicket(ticketId: string): Promise<Ticket> {
     if (!res.ok) throw new Error('Failed to restore ticket');
     return res.json();
 }
+
+export async function sendTemplateToTicket(
+    ticketId: string,
+    templateName: string,
+    languageCode: string,
+    components: unknown[],
+    resolvedBody: string
+): Promise<Message> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/send-template`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ templateName, languageCode, components, resolvedBody }),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { message?: string }).message || 'Failed to send template');
+    }
+    const data = await res.json();
+    return data.message;
+}

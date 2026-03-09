@@ -11,6 +11,7 @@ import {
     deleteTicket,
     listArchivedTickets,
     restoreTicket,
+    sendTemplateToTicket,
 } from "../controllers/ticket.controller";
 import { requireAdmin } from "../middlewares/auth.middleware";
 
@@ -26,6 +27,7 @@ router.post("/:id/handover", handoverTicket);
 router.post("/:id/assign", assignTicket);
 router.patch("/:id/archive", archiveTicket);
 router.patch("/:id/restore", restoreTicket);
+router.post("/:id/send-template", sendTemplateToTicket);
 router.delete("/:id", requireAdmin, deleteTicket);
 
 export default router;

@@ -331,3 +331,58 @@ export async function deleteTicket(req: AuthRequest, res: Response): Promise<voi
         res.status(500).json({ error: "Failed to delete ticket" });
     }
 }
+
+/**
+ * POST /api/tickets/:id/send-template
+ * Kirim template message ke percakapan yang sudah ada (saat 24h window tertutup).
+ */
+export async function sendTemplateToTicket(req: AuthRequest, res: Response): Promise<void> {
+    const ticketId = req.params.id as string;
+    const { templateName, languageCode = "id", components = [], resolvedBody } = req.body as {
+        templateName: string; languageCode?: string; components?: unknown[]; resolvedBody?: string;
+    };
+    const agentId = req.user?.userId;
+
+    if (!templateName) {
+        res.status(400).json({ message: "templateName is required" });
+        return;
+    }
+    if (!agentId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        const ticket = await prisma.ticket.findUnique({
+            where: { id: ticketId },
+            include: { contact: { select: { phoneNumber: true, waId: true } } },
+        }) as ({ contact: { phoneNumber: string; waId: string | null } } & { id: string }) | null;
+        if (!ticket) {
+            res.status(404).json({ message: "Ticket not found" });
+            return;
+        }
+
+        const toPhone = ticket.contact.waId || ticket.contact.phoneNumber;
+        const { wamid } = await sendTemplateMessage(toPhone, templateName, languageCode as string, components as never[]);
+
+        const message = await prisma.message.create({
+            data: {
+                ticketId,
+                direction: "OUTBOUND",
+                type: "TEMPLATE",
+                body: resolvedBody || `[Template: ${templateName}]`,
+                wamid,
+                sentById: agentId,
+                timestamp: new Date(),
+            },
+            include: { sentBy: { select: { id: true, name: true } } },
+        });
+
+        emitNewMessage(ticketId, message as unknown as Record<string, unknown>);
+        res.json({ message });
+    } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Failed to send template";
+        console.error("[Ticket] sendTemplateToTicket error:", err);
+        res.status(500).json({ message: msg });
+    }
+}

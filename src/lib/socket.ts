@@ -14,6 +14,14 @@ export function initSocket(server: HTTPServer): SocketIOServer {
     io.on("connection", (socket) => {
         console.log(`[Socket.io] Agent connected: ${socket.id}`);
 
+        // Each authenticated user joins their personal room for targeted notifications
+        socket.on("user:join", (userId: string) => {
+            if (typeof userId === "string" && userId.trim()) {
+                socket.join(`user:${userId}`);
+                console.log(`[Socket.io] User ${userId} joined personal room`);
+            }
+        });
+
         socket.on("disconnect", () => {
             console.log(`[Socket.io] Agent disconnected: ${socket.id}`);
         });
@@ -41,17 +49,27 @@ export function emitNewMessage(
 }
 
 /**
- * Emit event: ticket di-handover ke agen lain
+ * Emit event: ticket di-handover ke agen lain (hanya ke agen tujuan)
  */
 export function emitHandover(payload: Record<string, unknown>): void {
-    getIO().emit("ticket:handover", payload);
+    const toAgentId = payload.toAgentId as string | undefined;
+    if (toAgentId) {
+        getIO().to(`user:${toAgentId}`).emit("ticket:handover", payload);
+    } else {
+        getIO().emit("ticket:handover", payload);
+    }
 }
 
 /**
- * Emit event: ticket di-assign ke agen oleh admin
+ * Emit event: ticket di-assign ke agen oleh admin (hanya ke agen yang di-assign)
  */
 export function emitAssign(payload: Record<string, unknown>): void {
-    getIO().emit("ticket:assign", payload);
+    const agentId = payload.agentId as string | undefined;
+    if (agentId) {
+        getIO().to(`user:${agentId}`).emit("ticket:assign", payload);
+    } else {
+        getIO().emit("ticket:assign", payload);
+    }
 }
 
 /**
