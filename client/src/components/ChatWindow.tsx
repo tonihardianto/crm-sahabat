@@ -578,7 +578,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             </div>
 
             {/* Input Area */}
-            <div className="px-5 py-3 border-t border-border bg-card/50">
+            <div className="px-5 py-3 border-none border-border bg-background">
                 {/* Edit mode indicator */}
                 {editingMsg && (
                     <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">

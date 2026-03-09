@@ -79,7 +79,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
     });
 
     return (
-        <aside className="w-[320px] min-w-[280px] flex flex-col border-r border-border bg-background">
+        <aside className="w-[320px] min-w-[280px] flex flex-col border-none border-border bg-background">
             {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-border">
                 <div className="flex items-center justify-between mb-3">

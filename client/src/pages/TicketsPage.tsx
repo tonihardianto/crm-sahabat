@@ -197,9 +197,9 @@ export function TicketsPage() {
 
     return (
         <>
-        <div className="flex h-full overflow-hidden">
+        <div className="flex h-full overflow-hidden bg-background">
             {/* TicketList: full width on mobile when in list view, fixed width on desktop */}
-            <div className={`${isMobile ? (mobileView === 'list' ? 'flex w-full' : 'hidden') : 'flex'} flex-col`}>
+            <div className={`${isMobile ? (mobileView === 'list' ? 'flex w-full' : 'hidden') : 'flex'} flex-col border-r border-border`}>
                 <TicketList
                     tickets={tickets}
                     activeTicketId={activeTicket?.id || null}
