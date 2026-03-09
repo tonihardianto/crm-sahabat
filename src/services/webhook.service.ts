@@ -24,6 +24,7 @@ interface WAMessage {
     video?: { id: string; mime_type: string; caption?: string };
     document?: { id: string; mime_type: string; filename?: string; caption?: string };
     audio?: { id: string; mime_type: string };
+    context?: { from: string; id: string }; // quoted message wamid
 }
 
 interface WAStatus {
@@ -197,6 +198,16 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
         }
     }
 
+    // If the customer replied contextually, resolve the quoted message's DB id
+    let replyToId: string | undefined;
+    if (waMessage.context?.id) {
+        const quoted = await prisma.message.findUnique({
+            where: { wamid: waMessage.context.id },
+            select: { id: true },
+        });
+        if (quoted) replyToId = quoted.id;
+    }
+
     const message = await prisma.message.create({
         data: {
             ticketId,
@@ -206,6 +217,12 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
             mediaUrl: mediaUrl || null,
             wamid: waMessage.id,
             timestamp: new Date(parseInt(waMessage.timestamp) * 1000),
+            ...(replyToId ? { replyToId } : {}),
+        },
+        include: {
+            replyTo: {
+                select: { id: true, body: true, direction: true, type: true, sentBy: { select: { name: true } } },
+            },
         },
     });
 
