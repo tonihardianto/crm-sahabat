@@ -16,6 +16,14 @@ export async function listUsers() {
     });
 }
 
+export async function listAgents() {
+    return prisma.user.findMany({
+        where: { isActive: true },
+        select: { id: true, name: true, email: true, role: true },
+        orderBy: { name: "asc" },
+    });
+}
+
 export async function getUserById(id: string) {
     return prisma.user.findUnique({
         where: { id },

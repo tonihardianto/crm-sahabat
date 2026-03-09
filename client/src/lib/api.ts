@@ -160,7 +160,7 @@ export interface Agent {
 }
 
 export async function fetchAgents(): Promise<Agent[]> {
-    const res = await apiFetch(`${API_BASE}/users`);
+    const res = await apiFetch(`${API_BASE}/users/agents`);
     if (!res.ok) throw new Error('Failed to fetch agents');
     return res.json();
 }

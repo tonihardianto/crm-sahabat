@@ -2,6 +2,15 @@ import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import * as userService from "../services/user.service";
 
+export async function listAgentsHandler(_req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const agents = await userService.listAgents();
+        res.json(agents);
+    } catch {
+        res.status(500).json({ message: "Failed to fetch agents" });
+    }
+}
+
 export async function listUsersHandler(req: AuthRequest, res: Response): Promise<void> {
     try {
         const users = await userService.listUsers();

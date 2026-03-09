@@ -1,15 +1,19 @@
 import { Router } from "express";
-import { requireAdmin } from "../middlewares/auth.middleware";
+import { requireAdmin, requireAuth } from "../middlewares/auth.middleware";
 import {
     listUsersHandler,
     createUserHandler,
     updateUserHandler,
     deleteUserHandler,
+    listAgentsHandler,
 } from "../controllers/user.controller";
 
 const router = Router();
 
-// All user routes require ADMIN role
+// Any authenticated user can fetch the agents list (needed for handover/assign dialogs)
+router.get("/agents", requireAuth, listAgentsHandler);
+
+// All other user routes require ADMIN role
 router.use(requireAdmin);
 
 router.get("/", listUsersHandler);
