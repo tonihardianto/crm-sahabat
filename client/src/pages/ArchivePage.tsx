@@ -3,35 +3,25 @@ import { useSearchParams } from 'react-router-dom';
 import { TicketList } from '@/components/TicketList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ContextPanel } from '@/components/ContextPanel';
-import { useSocket } from '@/hooks/useSocket';
-import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket, markMessagesRead, archiveTicket as apiArchiveTicket, deleteTicket as apiDeleteTicket } from '@/lib/api';
+import { fetchArchivedTickets, fetchTicketById, restoreTicket as apiRestoreTicket, deleteTicket as apiDeleteTicket } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
-import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
-import { useNotification } from '@/context/NotificationContext';
 
-export function TicketsPage() {
+export function ArchivePage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
     const [activeTicket, setActiveTicket] = useState<Ticket | null>(null);
     const [loading, setLoading] = useState(true);
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const [showContextPanel, setShowContextPanel] = useState(true);
-    const { user } = useAuth();
     const isMobile = useMediaQuery('(max-width: 767px)');
-    const { resetUnread } = useNotification();
-
-    // Reset unread badge whenever the tickets page is visible
-    useEffect(() => {
-        resetUnread();
-    }, [resetUnread]);
     const [searchParams, setSearchParams] = useSearchParams();
 
     const loadTickets = useCallback(async () => {
         try {
-            const data = await fetchTickets();
+            const data = await fetchArchivedTickets();
             setTickets(data);
         } catch (err) {
-            console.error('Failed to load tickets:', err);
+            console.error('Failed to load archived tickets:', err);
         } finally {
             setLoading(false);
         }
@@ -50,53 +40,7 @@ export function TicketsPage() {
     const handleSelectTicket = useCallback((t: Ticket) => {
         loadTicketDetail(t.id);
         setMobileView('chat');
-        // Mark as read instantly in local state so badge disappears immediately
-        setTickets(prev => prev.map(tk =>
-            tk.id === t.id ? { ...tk, _count: { messages: 0 } } : tk
-        ));
-        // Fire-and-forget API call to persist in DB
-        markMessagesRead(t.id).catch(console.error);
     }, [loadTicketDetail]);
-
-    const handleNewMessage = useCallback(
-        (data: { ticketId: string }) => {
-            loadTickets();
-            if (activeTicket && data.ticketId === activeTicket.id) {
-                loadTicketDetail(activeTicket.id);
-            }
-        },
-        [activeTicket, loadTickets, loadTicketDetail]
-    );
-
-    const handleMessageEdited = useCallback(
-        (data: { ticketId: string; message: import('@/lib/api').Message }) => {
-            setActiveTicket(prev => {
-                if (!prev || prev.id !== data.ticketId) return prev;
-                return {
-                    ...prev,
-                    messages: prev.messages.map(m =>
-                        m.id === data.message.id ? { ...m, ...data.message } : m
-                    ),
-                };
-            });
-        },
-        []
-    );
-
-    // When a new outbound ticket is created via dialog, add it to list and select it
-    const handleNewOutboundTicket = useCallback((ticket: Ticket) => {
-        setTickets(prev => {
-            const exists = prev.find(t => t.id === ticket.id);
-            return exists ? prev : [ticket, ...prev];
-        });
-        loadTicketDetail(ticket.id);
-    }, [loadTicketDetail]);
-
-    useSocket({
-        onNewMessage: handleNewMessage,
-        onNewTicket: loadTickets,
-        onMessageEdited: handleMessageEdited,
-    });
 
     useEffect(() => { loadTickets(); }, [loadTickets]);
 
@@ -110,22 +54,6 @@ export function TicketsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleClaimTicket = async (ticketId: string) => {
-        try {
-            // Pass actual agent ID from auth context
-            await apiClaimTicket(ticketId, user?.userId || '');
-            loadTicketDetail(ticketId);
-            loadTickets();
-        } catch (err) {
-            console.error('Failed to claim ticket:', err);
-        }
-    };
-
-    const handleRefresh = () => {
-        if (activeTicket) loadTicketDetail(activeTicket.id);
-        loadTickets();
-    };
-
     const removeTicketFromState = (ticketId: string) => {
         setTickets(prev => prev.filter(t => t.id !== ticketId));
         if (activeTicket?.id === ticketId) {
@@ -135,12 +63,12 @@ export function TicketsPage() {
         }
     };
 
-    const handleArchiveTicket = async (ticketId: string) => {
+    const handleRestoreTicket = async (ticketId: string) => {
         try {
-            await apiArchiveTicket(ticketId);
+            await apiRestoreTicket(ticketId);
             removeTicketFromState(ticketId);
         } catch (err) {
-            console.error('Failed to archive ticket:', err);
+            console.error('Failed to restore ticket:', err);
         }
     };
 
@@ -159,7 +87,7 @@ export function TicketsPage() {
             <div className="h-full w-full flex items-center justify-center bg-background">
                 <div className="text-center">
                     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-sm text-muted-foreground">Loading tickets...</p>
+                    <p className="text-sm text-muted-foreground">Memuat arsip...</p>
                 </div>
             </div>
         );
@@ -167,34 +95,33 @@ export function TicketsPage() {
 
     return (
         <div className="flex h-full overflow-hidden">
-            {/* TicketList: full width on mobile when in list view, fixed width on desktop */}
+            {/* TicketList */}
             <div className={`${isMobile ? (mobileView === 'list' ? 'flex w-full' : 'hidden') : 'flex'} flex-col`}>
                 <TicketList
                     tickets={tickets}
                     activeTicketId={activeTicket?.id || null}
                     onSelectTicket={handleSelectTicket}
-                    onNewTicket={handleNewOutboundTicket}
-                    onArchiveTicket={handleArchiveTicket}
+                    onRestoreTicket={handleRestoreTicket}
                     onDeleteTicket={handleDeleteTicket}
                 />
             </div>
 
-            {/* ChatWindow + ContextPanel: full width on mobile when in chat view */}
+            {/* ChatWindow + ContextPanel */}
             <div className={`${isMobile ? (mobileView === 'chat' ? 'flex w-full' : 'hidden') : 'flex flex-1'} overflow-hidden`}>
                 <ChatWindow
                     ticket={activeTicket}
-                    onClaimTicket={handleClaimTicket}
-                    onMessageSent={handleRefresh}
+                    onClaimTicket={() => {}}
+                    onMessageSent={() => activeTicket && loadTicketDetail(activeTicket.id)}
                     onBack={isMobile ? () => setMobileView('list') : undefined}
                     showContextPanel={showContextPanel}
                     onToggleContextPanel={() => setShowContextPanel(p => !p)}
-                    onArchiveTicket={handleArchiveTicket}
+                    onRestoreTicket={handleRestoreTicket}
                     onDeleteTicket={handleDeleteTicket}
                 />
                 {!isMobile && showContextPanel && (
                     <ContextPanel
                         ticket={activeTicket}
-                        onTicketUpdated={handleRefresh}
+                        onTicketUpdated={() => activeTicket && loadTicketDetail(activeTicket.id)}
                         onClose={() => setShowContextPanel(false)}
                     />
                 )}

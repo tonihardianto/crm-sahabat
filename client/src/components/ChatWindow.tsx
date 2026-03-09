@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2 } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useAppSettings } from '@/context/AppSettingsContext';
 
 
 interface ChatWindowProps {
@@ -20,6 +21,9 @@ interface ChatWindowProps {
     onBack?: () => void;
     showContextPanel?: boolean;
     onToggleContextPanel?: () => void;
+    onArchiveTicket?: (ticketId: string) => void;
+    onDeleteTicket?: (ticketId: string) => void;
+    onRestoreTicket?: (ticketId: string) => void;
 }
 
 interface TemplateData {
@@ -107,7 +111,7 @@ function getWindowTimeLeft(messages: Message[]): string | null {
     return `${hours}h ${mins}m`;
 }
 
-export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showContextPanel, onToggleContextPanel }: ChatWindowProps) {
+export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showContextPanel, onToggleContextPanel, onArchiveTicket, onDeleteTicket, onRestoreTicket }: ChatWindowProps) {
     const [inputText, setInputText] = useState('');
     const [isInternal, setIsInternal] = useState(false);
     const [sending, setSending] = useState(false);
@@ -120,6 +124,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [showAssign, setShowAssign] = useState(false);
     const [editingMsg, setEditingMsg] = useState<Message | null>(null);
     const { user } = useAuth();
+    const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
     const imageInputRef = useRef<HTMLInputElement>(null);
     const docInputRef = useRef<HTMLInputElement>(null);
@@ -323,6 +328,34 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                     </DropdownMenuItem>
                                 </>
                             )}
+
+                            {/* Archive / Delete / Restore */}
+                            {(onRestoreTicket || onArchiveTicket || (isAdmin && onDeleteTicket)) && (
+                                <>
+                                    <DropdownMenuSeparator />
+                                    {onRestoreTicket && (
+                                        <DropdownMenuItem onClick={() => onRestoreTicket(ticket.id)}>
+                                            <Archive className="w-4 h-4 mr-2" />
+                                            Restore Tiket
+                                        </DropdownMenuItem>
+                                    )}
+                                    {onArchiveTicket && (
+                                        <DropdownMenuItem onClick={() => onArchiveTicket(ticket.id)}>
+                                            <Archive className="w-4 h-4 mr-2" />
+                                            Archive Tiket
+                                        </DropdownMenuItem>
+                                    )}
+                                    {isAdmin && onDeleteTicket && (
+                                        <DropdownMenuItem
+                                            onClick={() => onDeleteTicket(ticket.id)}
+                                            className="text-destructive focus:text-destructive"
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            Hapus Permanen
+                                        </DropdownMenuItem>
+                                    )}
+                                </>
+                            )}
                         </DropdownMenuContent>
                     </DropdownMenu>
                     {onToggleContextPanel && !showContextPanel && (
@@ -337,30 +370,27 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 </div>
                 
             </div>
-            {!windowOpen ? (
-                <div className='flex items-center justify-center'>
-                    <div>
-                        <Badge variant="outline" className='items-center text-center text-destructive/90 bg-destructive/20 mx-3 my-2 w-fit py-1'>
-                            <CircleAlertIcon />
-                            {/* <AlertDescription> */}
-                                <p>Pesan kadaluwarsa. Hanya bisa mengirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.</p>
-                            {/* </AlertDescription> */}
+
+            {/* Messages — relative wrapper so the floating badge can overlay */}
+            <div className="flex-1 relative min-h-0">
+                {/* Floating badge */}
+                {windowOpen ? (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
+                        <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1 shadow-sm backdrop-blur-sm">
+                            <Clock className="w-3 h-3" />Time Left: {timeLeft}
                         </Badge>
                     </div>
-                    
-                </div>
-                
-            ) : (
-                <div className='flex items-center justify-center w-full mt-2 -pb-1 -mb-2 bg-transparent'>
-                    <Badge variant="outline" className="text-emerald-400 border-emerald-500/30 bg-emerald-500/10 gap-1">
-                        <Clock className="w-3 h-3" />Time Left: {timeLeft}
-                    </Badge>
-                </div>
-            )}     
+                ) : (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none w-max max-w-[90%]">
+                        <Badge variant="outline" className="items-center text-center text-destructive/90 bg-destructive/20 py-1 gap-1 shadow-sm backdrop-blur-sm">
+                            <CircleAlertIcon className="w-3 h-3 shrink-0" />
+                            <p>Pesan kadaluwarsa. Hanya bisa mengirim <span className="font-semibold">Template Message</span> atau <span className="font-semibold">Internal Note</span>.</p>
+                        </Badge>
+                    </div>
+                )}
 
-            {/* Messages */}
-            <ScrollArea className="flex-1 px-5 py-4 overflow-y-auto">
-                <div className="space-y-1">
+                <ScrollArea className="h-full px-5 py-4 overflow-y-auto" style={chatBg ? { backgroundColor: chatBg } : undefined}>
+                <div className="space-y-1 pt-7">
                     {Object.entries(dateGroups).map(([dateKey, msgs]) => (
                         <div key={dateKey}>
                             <div className="flex items-center justify-center my-4">
@@ -393,7 +423,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                         </div>
                                     ) : msg.direction === 'INBOUND' ? (
                                         <div className="max-w-[70%]">
-                                            <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border">
+                                            <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border" style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}>
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                                                         <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
@@ -421,7 +451,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     <Pencil className="w-3 h-3 text-blue-300" />
                                                 </button>
                                             )}
-                                            <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30">
+                                            <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30" style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}>
                                                 {msg.sentBy && (
                                                     <div className="flex items-center gap-1 mb-1">
                                                         <User2 className="w-3 h-3 text-blue-200/70" />
@@ -455,6 +485,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     <div ref={messagesEndRef} />
                 </div>
             </ScrollArea>
+            </div>
 
             {/* Input Area */}
             <div className="px-5 py-3 border-t border-border bg-card/50">

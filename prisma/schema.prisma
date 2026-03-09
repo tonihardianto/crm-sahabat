@@ -24,11 +24,31 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedTickets Ticket[]  @relation("AssignedAgent")
-  messages        Message[] @relation("SentByAgent")
-  claimedTickets  Ticket[]  @relation("ClaimedBy")
+  assignedTickets Ticket[]      @relation("AssignedAgent")
+  messages        Message[]     @relation("SentByAgent")
+  claimedTickets  Ticket[]      @relation("ClaimedBy")
+  settings        UserSettings?
 
   @@map("users")
+}
+
+// ============================================================
+// User Settings (per-user app preferences)
+// ============================================================
+
+model UserSettings {
+  id                  String   @id @default(cuid())
+  userId              String   @unique @map("user_id")
+  sidebarCollapsed    Boolean  @default(false) @map("sidebar_collapsed")
+  chatBg              String?  @map("chat_bg")
+  outboundBubbleColor String?  @map("outbound_bubble_color")
+  inboundBubbleColor  String?  @map("inbound_bubble_color")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
 }
 
 enum UserRole {
@@ -118,6 +138,7 @@ enum TicketStatus {
   OPEN
   PENDING
   RESOLVED
+  ARCHIVED
 }
 
 enum TicketPriority {

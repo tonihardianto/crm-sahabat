@@ -1,18 +1,23 @@
-import { Search, MessageSquarePlus } from 'lucide-react';
+import { Search, MessageSquarePlus, MoreHorizontal, Archive, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import type { Ticket } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { StatsBar } from './StatsBar';
 import { NewConversationDialog } from './NewConversationDialog';
+import { useAuth } from '@/context/AuthContext';
 
 interface TicketListProps {
     tickets: Ticket[];
     activeTicketId: string | null;
     onSelectTicket: (ticket: Ticket) => void;
     onNewTicket?: (ticket: Ticket) => void;
+    onArchiveTicket?: (ticketId: string) => void;
+    onDeleteTicket?: (ticketId: string) => void;
+    onRestoreTicket?: (ticketId: string) => void;
 }
 
 function formatTime(dateStr: string): string {
@@ -57,9 +62,11 @@ const statusDot: Record<string, string> = {
     RESOLVED: 'bg-gray-400',
 };
 
-export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicket }: TicketListProps) {
+export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicket, onArchiveTicket, onDeleteTicket, onRestoreTicket }: TicketListProps) {
     const [search, setSearch] = useState('');
     const [showNewDialog, setShowNewDialog] = useState(false);
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
 
     const filtered = tickets.filter((t) => {
         const q = search.toLowerCase();
@@ -122,14 +129,13 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                         const dotColor = statusDot[ticket.status] ?? 'bg-gray-400';
 
                         return (
-                            <button
+                            <div
                                 key={ticket.id}
-                                onClick={() => onSelectTicket(ticket)}
-                                className={`w-full text-left px-4 py-3 border-b border-border/40 transition-colors duration-100 hover:bg-accent/60 cursor-pointer ${
+                                className={`w-full text-left px-4 py-3 border-b border-border/40 transition-colors duration-100 hover:bg-accent/60 cursor-pointer relative group ${
                                     isActive ? 'bg-accent' : ''
                                 }`}
                             >
-                                <div className="flex items-center gap-3">
+                                <div onClick={() => onSelectTicket(ticket)} className="flex items-center gap-3 pr-7">
                                     {/* Avatar */}
                                     <div className="relative shrink-0">
                                         <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white text-sm font-semibold ${avatarColor}`}>
@@ -167,7 +173,55 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                                         </div>
                                     </div>
                                 </div>
-                            </button>
+
+                                {/* 3-dot context menu — visible on hover */}
+                                {(onArchiveTicket || onRestoreTicket || onDeleteTicket) && (
+                                    <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                >
+                                                    <MoreHorizontal className="w-4 h-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-44">
+                                                {onRestoreTicket && (
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => { e.stopPropagation(); onRestoreTicket(ticket.id); }}
+                                                    >
+                                                        <Archive className="w-4 h-4 mr-2" />
+                                                        Restore
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {onArchiveTicket && (
+                                                    <DropdownMenuItem
+                                                        onClick={(e) => { e.stopPropagation(); onArchiveTicket(ticket.id); }}
+                                                    >
+                                                        <Archive className="w-4 h-4 mr-2" />
+                                                        Archive
+                                                    </DropdownMenuItem>
+                                                )}
+                                                {isAdmin && onDeleteTicket && (
+                                                    <>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => { e.stopPropagation(); onDeleteTicket(ticket.id); }}
+                                                            className="text-destructive focus:text-destructive"
+                                                        >
+                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                            Hapus Permanen
+                                                        </DropdownMenuItem>
+                                                    </>
+                                                )}
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </div>
+                                )}
+                            </div>
                         );
                     })
                 )}

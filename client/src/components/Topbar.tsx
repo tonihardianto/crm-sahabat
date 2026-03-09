@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Plus, User, Menu, Sun, Moon, Bell } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
     const { user, logout } = useAuth();
     const { theme, toggle } = useTheme();
     const { unreadCount, requestPermission, notifyPermission } = useNotification();
+    const navigate = useNavigate();
 
     return (
         <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 shrink-0 top-0 sticky z-50">
@@ -101,7 +102,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                                 </div>
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                            <DropdownMenuItem onClick={() => navigate('/settings')} className="gap-2 cursor-pointer">
                                 <User className="w-4 h-4" />
                                 My Account
                             </DropdownMenuItem>

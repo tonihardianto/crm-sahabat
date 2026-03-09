@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { NotificationProvider } from '@/context/NotificationContext';
+import { AppSettingsProvider } from '@/context/AppSettingsContext';
 import { Toaster } from 'sonner';
 import { PrivateRoute } from '@/components/PrivateRoute';
 import { Topbar } from '@/components/Topbar';
@@ -9,10 +10,12 @@ import { Sidebar } from '@/components/Sidebar';
 import { LoginPage } from '@/pages/LoginPage';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { TicketsPage } from '@/pages/TicketsPage';
+import { ArchivePage } from '@/pages/ArchivePage';
 import { ClientsPage } from '@/pages/ClientsPage';
 import { ContactsPage } from '@/pages/ContactsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { UsersPage } from '@/pages/UsersPage';
+import { AppSettingsPage } from '@/pages/AppSettingsPage';
 
 function AppLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -26,9 +29,11 @@ function AppLayout() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/tickets" element={<TicketsPage />} />
+            <Route path="/archived" element={<ArchivePage />} />
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/users" element={
               <PrivateRoute adminOnly>
                 <UsersPage />
@@ -46,6 +51,7 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <NotificationProvider>
+        <AppSettingsProvider>
         <Toaster position="top-right" closeButton />
         <Routes>
           {/* Public */}
@@ -58,6 +64,7 @@ export default function App() {
             </PrivateRoute>
           } />
         </Routes>
+        </AppSettingsProvider>
         </NotificationProvider>
       </AuthProvider>
     </BrowserRouter>

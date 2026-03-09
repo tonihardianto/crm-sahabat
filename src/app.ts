@@ -11,6 +11,7 @@ import statsRoutes from "./routes/stats.routes";
 import templateRoutes from "./routes/template.routes";
 import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
+import settingsRoutes from "./routes/settings.routes";
 import { requireAuth } from "./middlewares/auth.middleware";
 
 const app = express();
@@ -42,6 +43,7 @@ app.use("/api/contacts", requireAuth, contactRoutes);
 app.use("/api/stats", requireAuth, statsRoutes);
 app.use("/api/templates", requireAuth, templateRoutes);
 app.use("/api/users", userRoutes); // has requireAdmin internally
+app.use("/api/settings", requireAuth, settingsRoutes);
 
 // ---- Health Check ----
 app.get("/health", (_req, res) => {

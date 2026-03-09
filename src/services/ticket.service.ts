@@ -5,7 +5,7 @@ import prisma from "../lib/prisma";
  */
 export async function getActiveTickets() {
     return prisma.ticket.findMany({
-        where: {},
+        where: { status: { not: "ARCHIVED" } },
         include: {
             contact: {
                 include: { client: true },
@@ -152,6 +152,51 @@ export async function createOutboundTicket(data: {
                 include: { sentBy: { select: { id: true, name: true } } },
             },
         },
+    });
+}
+
+/**
+ * Archive tiket (ubah status ke ARCHIVED).
+ */
+export async function archiveTicket(ticketId: string) {
+    return prisma.ticket.update({
+        where: { id: ticketId },
+        data: { status: "ARCHIVED" },
+    });
+}
+
+/**
+ * Hapus tiket beserta semua messages-nya.
+ */
+export async function deleteTicket(ticketId: string) {
+    await prisma.message.deleteMany({ where: { ticketId } });
+    return prisma.ticket.delete({ where: { id: ticketId } });
+}
+
+/**
+ * Ambil semua tiket yang di-archive.
+ */
+export async function getArchivedTickets() {
+    return prisma.ticket.findMany({
+        where: { status: "ARCHIVED" },
+        include: {
+            contact: { include: { client: true } },
+            assignedAgent: { select: { id: true, name: true } },
+            claimedBy: { select: { id: true, name: true } },
+            messages: { orderBy: { timestamp: "desc" }, take: 1 },
+            _count: { select: { messages: { where: { isRead: false, direction: "INBOUND" } } } },
+        },
+        orderBy: { updatedAt: "desc" },
+    });
+}
+
+/**
+ * Restore tiket dari arsip (ubah status kembali ke RESOLVED).
+ */
+export async function restoreTicket(ticketId: string) {
+    return prisma.ticket.update({
+        where: { id: ticketId },
+        data: { status: "RESOLVED" },
     });
 }
 

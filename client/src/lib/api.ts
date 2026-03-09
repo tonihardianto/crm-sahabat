@@ -9,7 +9,7 @@ export interface Ticket {
     ticketNumber: string;
     contactId: string;
     category: 'BUG' | 'FEATURE_REQUEST' | 'SERVICE';
-    status: 'NEW' | 'OPEN' | 'PENDING' | 'RESOLVED';
+    status: 'NEW' | 'OPEN' | 'PENDING' | 'RESOLVED' | 'ARCHIVED';
     priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
     subject: string | null;
     assignedAgentId: string | null;
@@ -175,5 +175,53 @@ export async function editMessage(ticketId: string, msgId: string, body: string)
         body: JSON.stringify({ body }),
     });
     if (!res.ok) throw new Error('Failed to edit message');
+    return res.json();
+}
+
+// ── App Settings ──────────────────────────────────────────────
+
+export interface AppSettings {
+    sidebarCollapsed: boolean;
+    chatBg: string | null;
+    outboundBubbleColor: string | null;
+    inboundBubbleColor: string | null;
+}
+
+export async function fetchAppSettings(): Promise<AppSettings> {
+    const res = await apiFetch(`${API_BASE}/settings`);
+    if (!res.ok) throw new Error('Failed to fetch settings');
+    return res.json();
+}
+
+export async function saveAppSettings(data: Partial<AppSettings>): Promise<AppSettings> {
+    const res = await apiFetch(`${API_BASE}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to save settings');
+    return res.json();
+}
+
+export async function archiveTicket(ticketId: string): Promise<Ticket> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/archive`, { method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed to archive ticket');
+    return res.json();
+}
+
+export async function deleteTicket(ticketId: string): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete ticket');
+}
+
+export async function fetchArchivedTickets(): Promise<Ticket[]> {
+    const res = await apiFetch(`${API_BASE}/tickets/archived`);
+    if (!res.ok) throw new Error('Failed to fetch archived tickets');
+    return res.json();
+}
+
+export async function restoreTicket(ticketId: string): Promise<Ticket> {
+    const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/restore`, { method: 'PATCH' });
+    if (!res.ok) throw new Error('Failed to restore ticket');
     return res.json();
 }

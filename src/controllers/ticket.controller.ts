@@ -272,3 +272,62 @@ export async function initiateTicket(req: AuthRequest, res: Response): Promise<v
         res.status(500).json({ message: msg });
     }
 }
+
+/**
+ * GET /api/tickets/archived
+ * Ambil semua tiket yang di-archive.
+ */
+export async function listArchivedTickets(_req: Request, res: Response): Promise<void> {
+    try {
+        const tickets = await ticketService.getArchivedTickets();
+        res.json(tickets);
+    } catch (error) {
+        console.error("[Ticket] Error listing archived tickets:", error);
+        res.status(500).json({ error: "Failed to fetch archived tickets" });
+    }
+}
+
+/**
+ * PATCH /api/tickets/:id/restore
+ * Kembalikan tiket dari arsip ke status RESOLVED.
+ */
+export async function restoreTicket(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const ticketId = req.params.id as string;
+        const ticket = await ticketService.restoreTicket(ticketId);
+        res.json(ticket);
+    } catch (error) {
+        console.error("[Ticket] Error restoring ticket:", error);
+        res.status(500).json({ error: "Failed to restore ticket" });
+    }
+}
+
+/**
+ * PATCH /api/tickets/:id/archive
+ * Archive tiket (mengubah status ke ARCHIVED).
+ */
+export async function archiveTicket(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const ticketId = req.params.id as string;
+        const ticket = await ticketService.archiveTicket(ticketId);
+        res.json(ticket);
+    } catch (error) {
+        console.error("[Ticket] Error archiving ticket:", error);
+        res.status(500).json({ error: "Failed to archive ticket" });
+    }
+}
+
+/**
+ * DELETE /api/tickets/:id
+ * Hapus tiket permanen (admin only).
+ */
+export async function deleteTicket(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const ticketId = req.params.id as string;
+        await ticketService.deleteTicket(ticketId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error("[Ticket] Error deleting ticket:", error);
+        res.status(500).json({ error: "Failed to delete ticket" });
+    }
+}
