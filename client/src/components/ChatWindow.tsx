@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
@@ -71,6 +71,18 @@ function MessageTicks({ msg }: { msg: import('@/lib/api').Message }) {
     return <Check className="w-3.5 h-3.5 text-blue-200/50 shrink-0" />;
 }
 
+function QuotedMessage({ replyTo, variant }: { replyTo: NonNullable<Message['replyTo']>; variant: 'inbound' | 'outbound' | 'internal' }) {
+    const borderColor = variant === 'outbound' ? 'border-blue-300/40' : variant === 'internal' ? 'border-amber-400/40' : 'border-border';
+    const bgColor = variant === 'outbound' ? 'bg-blue-900/30' : variant === 'internal' ? 'bg-amber-800/20' : 'bg-muted/50';
+    const label = replyTo.direction === 'OUTBOUND' ? (replyTo.sentBy?.name ?? 'Agent') : replyTo.direction === 'INTERNAL' ? 'Internal Note' : 'Pelanggan';
+    return (
+        <div className={`rounded-lg border-l-2 px-2 py-1 mb-1.5 ${borderColor} ${bgColor} max-w-full`}>
+            <p className="text-[10px] font-semibold text-blue-300/80 mb-0.5">{label}</p>
+            <p className="text-xs truncate opacity-70">{replyTo.type === 'TEXT' ? replyTo.body : `[${replyTo.type}]`}</p>
+        </div>
+    );
+}
+
 function DocBubble({ url, filename, variant }: { url: string; filename: string; variant: 'inbound' | 'outbound' }) {
     const ext = getFileExtension(filename);
     const isPdf = ext === 'PDF';
@@ -130,6 +142,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [showHandover, setShowHandover] = useState(false);
     const [showAssign, setShowAssign] = useState(false);
     const [editingMsg, setEditingMsg] = useState<Message | null>(null);
+    const [replyingTo, setReplyingTo] = useState<Message | null>(null);
     const { user } = useAuth();
     const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
@@ -185,8 +198,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 setAttachPreview(null);
                 setInputText('');
             } else {
-                await apiSendMessage(ticket.id, inputText.trim(), isInternal ? 'INTERNAL' : 'OUTBOUND');
+                await apiSendMessage(ticket.id, inputText.trim(), isInternal ? 'INTERNAL' : 'OUTBOUND', undefined, replyingTo?.id);
                 setInputText('');
+                setReplyingTo(null);
             }
             onMessageSent();
         } catch (err) {
@@ -223,6 +237,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
         if (e.key === 'Escape' && editingMsg) {
             setEditingMsg(null);
             setInputText('');
+        }
+        if (e.key === 'Escape' && replyingTo) {
+            setReplyingTo(null);
         }
     };
 
@@ -413,24 +430,35 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <StickyNote className="w-3 h-3 text-amber-400" />
                                                 <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
                                             </div>
+                                            {msg.replyTo && <QuotedMessage replyTo={msg.replyTo} variant="internal" />}
                                             <p className="text-sm text-amber-500/90 whitespace-pre-wrap">{msg.body}</p>
                                             <div className="flex items-center justify-end gap-1 mt-1">
                                                 {msg.isEdited && <span className="text-[10px] text-amber-500/50 italic">diedit</span>}
                                                 <span className="text-[10px] text-amber-500/60">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
-                                            {msg.type === 'TEXT' && (
+                                            <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                                 <button
-                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); }}
-                                                    className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
-                                                    title="Edit pesan"
+                                                    onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
+                                                    className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
+                                                    title="Balas pesan"
                                                 >
-                                                    <Pencil className="w-3 h-3 text-amber-400" />
+                                                    <CornerUpLeft className="w-3 h-3 text-amber-400" />
                                                 </button>
-                                            )}
+                                                {msg.type === 'TEXT' && (
+                                                    <button
+                                                        onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
+                                                        className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
+                                                        title="Edit pesan"
+                                                    >
+                                                        <Pencil className="w-3 h-3 text-amber-400" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     ) : msg.direction === 'INBOUND' ? (
-                                        <div className="max-w-[70%]">
+                                        <div className="max-w-[70%] group relative">
                                             <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border" style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}>
+                                                {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="inbound" /></div>}
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                                                         <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
@@ -446,12 +474,19 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
+                                            <button
+                                                onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
+                                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-accent"
+                                                title="Balas pesan"
+                                            >
+                                                <CornerUpLeft className="w-3 h-3 text-muted-foreground" />
+                                            </button>
                                         </div>
                                     ) : (msg.direction === 'OUTBOUND') ? (
                                         <div className="group relative max-w-[70%] flex items-end gap-1">
                                             {msg.type === 'TEXT' && (
                                                 <button
-                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); }}
+                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
                                                     className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 shrink-0 mb-1"
                                                     title="Edit pesan"
                                                 >
@@ -465,6 +500,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                         <span className="text-[10px] text-blue-200/70">{msg.sentBy.name}</span>
                                                     </div>
                                                 )}
+                                                {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="outbound" /></div>}
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
                                                         <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
@@ -484,6 +520,13 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     <MessageTicks msg={msg} />
                                                 </div>
                                             </div>
+                                            <button
+                                                onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 shrink-0 mb-1"
+                                                title="Balas pesan"
+                                            >
+                                                <CornerUpLeft className="w-3 h-3 text-blue-300" />
+                                            </button>
                                         </div>
                                     ) : null}
                                 </div>
@@ -504,6 +547,17 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         <span className="text-xs text-primary font-medium flex-1 truncate">Mengedit pesan: {editingMsg.body}</span>
                         <button onClick={() => { setEditingMsg(null); setInputText(''); }} className="p-0.5 rounded hover:bg-primary/20">
                             <X className="w-3.5 h-3.5 text-primary" />
+                        </button>
+                    </div>
+                )}
+                {/* Reply preview strip */}
+                {replyingTo && (
+                    <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <CornerUpLeft className="w-3 h-3 text-blue-400 shrink-0" />
+                        <span className="text-xs text-blue-400 font-medium shrink-0">Membalas:</span>
+                        <span className="text-xs text-muted-foreground flex-1 truncate">{replyingTo.body}</span>
+                        <button onClick={() => setReplyingTo(null)} className="p-0.5 rounded hover:bg-blue-500/20">
+                            <X className="w-3.5 h-3.5 text-muted-foreground" />
                         </button>
                     </div>
                 )}

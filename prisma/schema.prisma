@@ -161,6 +161,7 @@ model Message {
   wamid       String?          @unique // WhatsApp Message ID untuk deduplication
   mediaUrl    String?          @map("media_url") @db.Text
   sentById    String?          @map("sent_by_id") // Agent yang mengirim (untuk outbound & internal notes)
+  replyToId   String?          @map("reply_to_id")
   isRead      Boolean          @default(false) @map("is_read")
   isEdited    Boolean          @default(false) @map("is_edited")
   editedAt    DateTime?        @map("edited_at")
@@ -169,13 +170,16 @@ model Message {
   readAt      DateTime?        @map("read_at")
   createdAt   DateTime         @default(now())
 
-  ticket Ticket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  sentBy User?  @relation("SentByAgent", fields: [sentById], references: [id], onDelete: SetNull)
+  ticket  Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sentBy  User?    @relation("SentByAgent", fields: [sentById], references: [id], onDelete: SetNull)
+  replyTo Message? @relation("MessageReply", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies Message[] @relation("MessageReply")
 
   @@index([ticketId])
   @@index([sentById])
   @@index([wamid])
   @@index([direction])
+  @@index([replyToId])
   @@map("messages")
 }
 

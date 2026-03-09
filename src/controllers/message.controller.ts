@@ -56,7 +56,7 @@ export async function sendMediaMessage(req: Request, res: Response): Promise<voi
 export async function sendMessage(req: Request, res: Response): Promise<void> {
     try {
         const ticketId = req.params.id as string;
-        const { body, direction, sentById } = req.body;
+        const { body, direction, sentById, replyToId } = req.body;
 
         if (!body || !direction) {
             res.status(400).json({ error: "body and direction are required" });
@@ -72,6 +72,7 @@ export async function sendMessage(req: Request, res: Response): Promise<void> {
             body,
             direction,
             sentById,
+            replyToId,
         });
 
         res.status(201).json(message);

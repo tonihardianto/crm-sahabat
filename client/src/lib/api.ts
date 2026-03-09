@@ -51,6 +51,8 @@ export interface Message {
     wamid: string | null;
     mediaUrl: string | null;
     sentById: string | null;
+    replyToId: string | null;
+    replyTo: { id: string; body: string; direction: string; type: string; sentBy: { name: string } | null } | null;
     isRead: boolean;
     isEdited: boolean;
     editedAt: string | null;
@@ -77,12 +79,13 @@ export async function sendMessage(
     ticketId: string,
     body: string,
     direction: 'OUTBOUND' | 'INTERNAL',
-    sentById?: string
+    sentById?: string,
+    replyToId?: string
 ): Promise<Message> {
     const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ body, direction, sentById }),
+        body: JSON.stringify({ body, direction, sentById, replyToId }),
     });
     if (!res.ok) throw new Error('Failed to send message');
     return res.json();

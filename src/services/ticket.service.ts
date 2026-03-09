@@ -51,8 +51,15 @@ export async function getTicketById(ticketId: string) {
             messages: {
                 orderBy: { timestamp: "asc" },
                 include: {
-                    sentBy: {
-                        select: { id: true, name: true },
+                    sentBy: { select: { id: true, name: true } },
+                    replyTo: {
+                        select: {
+                            id: true,
+                            body: true,
+                            direction: true,
+                            type: true,
+                            sentBy: { select: { name: true } },
+                        },
                     },
                 },
             },

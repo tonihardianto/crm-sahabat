@@ -22,8 +22,17 @@ function getConfig() {
 /**
  * Kirim pesan teks ke nomor WA
  */
-export async function sendTextMessage(to: string, body: string): Promise<{ wamid: string }> {
+export async function sendTextMessage(to: string, body: string, replyWamid?: string): Promise<{ wamid: string }> {
     const { phoneNumberId, accessToken } = getConfig();
+
+    const payload: Record<string, unknown> = {
+        messaging_product: "whatsapp",
+        recipient_type: "individual",
+        to,
+        type: "text",
+        text: { preview_url: false, body },
+    };
+    if (replyWamid) payload.context = { message_id: replyWamid };
 
     const response = await fetch(`${BASE_URL}/${phoneNumberId}/messages`, {
         method: "POST",
@@ -31,13 +40,7 @@ export async function sendTextMessage(to: string, body: string): Promise<{ wamid
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to,
-            type: "text",
-            text: { preview_url: false, body },
-        }),
+        body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

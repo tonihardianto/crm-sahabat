@@ -26,37 +26,39 @@ export async function createMessage(
         body: string;
         direction: "OUTBOUND" | "INTERNAL";
         sentById?: string;
+        replyToId?: string;
     }
 ) {
     let wamid: string | undefined;
 
-    // --- Kirim ke WhatsApp jika OUTBOUND ---
     if (data.direction === "OUTBOUND") {
-        // Ambil nomor WA kontak dari ticket
         const ticket = await prisma.ticket.findUnique({
             where: { id: ticketId },
-            include: {
-                contact: { select: { waId: true, phoneNumber: true } },
-            },
+            include: { contact: { select: { waId: true, phoneNumber: true } } },
         });
 
-        if (!ticket || !ticket.contact) {
-            throw new Error("Ticket or contact not found");
-        }
+        if (!ticket || !ticket.contact) throw new Error("Ticket or contact not found");
 
         const recipientPhone = ticket.contact.waId || ticket.contact.phoneNumber;
 
+        // Resolve wamid of quoted message for WhatsApp context reply
+        let replyWamid: string | undefined;
+        if (data.replyToId) {
+            const quoted = await prisma.message.findUnique({
+                where: { id: data.replyToId },
+                select: { wamid: true },
+            });
+            replyWamid = quoted?.wamid ?? undefined;
+        }
+
         try {
-            const result = await sendTextMessage(recipientPhone, data.body);
+            const result = await sendTextMessage(recipientPhone, data.body, replyWamid);
             wamid = result.wamid;
         } catch (error) {
             console.error("[Message] Failed to send via WhatsApp:", error);
-            // Tetap simpan pesan ke DB meskipun gagal kirim —
-            // agent bisa lihat bahwa pesan gagal terkirim
         }
     }
 
-    // --- Simpan ke database ---
     const message = await prisma.message.create({
         data: {
             ticketId,
@@ -65,16 +67,20 @@ export async function createMessage(
             body: data.body,
             sentById: data.sentById,
             wamid: wamid || undefined,
+            replyToId: data.replyToId || undefined,
             timestamp: new Date(),
         },
         include: {
-            sentBy: {
-                select: { id: true, name: true },
+            sentBy: { select: { id: true, name: true } },
+            replyTo: {
+                select: {
+                    id: true, body: true, direction: true, type: true,
+                    sentBy: { select: { name: true } },
+                },
             },
         },
     });
 
-    // Update ticket updatedAt
     await prisma.ticket.update({
         where: { id: ticketId },
         data: { updatedAt: new Date() },
