@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft } from 'lucide-react';
-import { EmojiPicker } from '@/components/EmojiPicker';
+import { EmojiPicker, EmojiPickerSearch, EmojiPickerContent, EmojiPickerFooter } from '@/components/ui/emoji-picker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
 import { HandoverDialog } from '@/components/HandoverDialog';
@@ -76,7 +76,7 @@ function QuotedMessage({ replyTo, variant }: { replyTo: NonNullable<Message['rep
     const bgColor = variant === 'outbound' ? 'bg-blue-900/30' : variant === 'internal' ? 'bg-amber-800/20' : 'bg-muted/50';
     const label = replyTo.direction === 'OUTBOUND' ? (replyTo.sentBy?.name ?? 'Agent') : replyTo.direction === 'INTERNAL' ? 'Internal Note' : 'Pelanggan';
     return (
-        <div className={`rounded-lg border-l-2 px-2 py-1 mb-1.5 ${borderColor} ${bgColor} max-w-full`}>
+        <div className={`rounded-lg border-l-2 px-2 py-1 -ms-2.5 -mt-1 -me-2.5 ${borderColor} ${bgColor} `}>
             <p className="text-[10px] font-semibold text-blue-300/80 mb-0.5">{label}</p>
             <p className="text-xs truncate opacity-70">{replyTo.type === 'TEXT' ? replyTo.body : `[${replyTo.type}]`}</p>
         </div>
@@ -633,11 +633,11 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                     <>
                                         <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
                                             <ImageIcon className="size-4" />
-                                            <span>Kirim Gambar / Video</span>
+                                            <span>Gambar / Video</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => docInputRef.current?.click()}>
                                             <File className="size-4" />
-                                            <span>Kirim Dokumen</span>
+                                            <span>Dokumen</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                     </>
@@ -668,8 +668,12 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     />
                     <InputGroupAddon align="inline-end" className="pr-1 relative">
                         {showEmojiPicker && (
-                            <div ref={emojiPickerRef} className="absolute bottom-10 right-0 z-50 w-[320px] rounded-xl border border-border bg-popover shadow-lg">
-                                <EmojiPicker onSelect={handleEmojiClick} />
+                            <div ref={emojiPickerRef} className="absolute bottom-10 right-0 z-50 rounded-xl border border-border shadow-lg overflow-hidden">
+                                <EmojiPicker className="h-[340px] w-[316px]" onEmojiSelect={({ emoji }) => { handleEmojiClick(emoji); setShowEmojiPicker(false); }}>
+                                    <EmojiPickerSearch />
+                                    <EmojiPickerContent />
+                                    <EmojiPickerFooter />
+                                </EmojiPicker>
                             </div>
                         )}
                         <InputGroupButton
