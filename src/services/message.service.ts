@@ -137,6 +137,7 @@ export async function createMediaMessage(
             type: data.type,
             body: data.body,
             mediaUrl: data.mediaUrl,
+            filename: data.filename || null,
             sentById: data.sentById,
             wamid: wamid || undefined,
             timestamp: new Date(),

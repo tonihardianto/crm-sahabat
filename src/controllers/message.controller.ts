@@ -41,7 +41,7 @@ export async function sendMediaMessage(req: Request, res: Response): Promise<voi
         const message = await messageService.createMediaMessage(ticketId, {
             type,
             mediaUrl,
-            body: caption || path.basename(file.originalname),
+            body: caption,
             filename: file.originalname,
             sentById,
         });

@@ -164,6 +164,7 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
     // Tentukan tipe pesan dan body
     const type = mapMessageType(waMessage.type);
     const body = extractMessageBody(waMessage);
+    const docFilename = waMessage.type === "document" ? (waMessage.document?.filename || null) : null;
 
     // Download media jika bukan TEXT
     let mediaUrl: string | undefined;
@@ -215,6 +216,7 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
             type,
             body,
             mediaUrl: mediaUrl || null,
+            filename: docFilename,
             wamid: waMessage.id,
             timestamp: new Date(parseInt(waMessage.timestamp) * 1000),
             ...(replyToId ? { replyToId } : {}),
@@ -251,15 +253,15 @@ function extractMessageBody(waMessage: WAMessage): string {
         case "text":
             return waMessage.text?.body || "";
         case "image":
-            return waMessage.image?.caption || "[Image]";
+            return waMessage.image?.caption || "";
         case "video":
-            return waMessage.video?.caption || "[Video]";
+            return waMessage.video?.caption || "";
         case "document":
-            return waMessage.document?.filename || "[Document]";
+            return waMessage.document?.caption || "";
         case "audio":
-            return "[Audio]";
+            return "";
         default:
-            return `[${waMessage.type}]`;
+            return "";
     }
 }
 

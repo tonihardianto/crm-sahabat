@@ -61,7 +61,8 @@ function groupMessagesByDate(messages: Message[]): Record<string, Message[]> {
 }
 
 function getFileExtension(filename: string): string {
-    return filename.split('.').pop()?.toUpperCase() || 'FILE';
+    const ext = filename.split('.').pop()?.toUpperCase() || 'FILE';
+    return ext.length > 6 ? 'FILE' : ext;
 }
 
 function MessageTicks({ msg }: { msg: import('@/lib/api').Message }) {
@@ -461,16 +462,17 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="inbound" /></div>}
                                                 {(msg.type === 'IMAGE') && msg.mediaUrl ? (
                                                     <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
-                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
+                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[440px] max-h-[240px] rounded-lg mb-1" />
                                                     </a>
                                                 ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
                                                     <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
                                                 ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
                                                     <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="inbound" />
+                                                    <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="inbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-foreground whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
                                                 <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
@@ -501,9 +503,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
                                                     <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
                                                 ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <DocBubble url={msg.mediaUrl} filename={msg.body || 'document'} variant="outbound" />
+                                                    <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="outbound" />
                                                 ) : null}
                                                 {msg.type === 'TEXT' && <p className="text-sm px-2 py-2 text-white whitespace-pre-wrap">{msg.body}</p>}
+                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-white/80">{msg.body}</p>}
                                                 {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
                                                 <div className="flex items-center justify-end gap-1">
                                                     {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}

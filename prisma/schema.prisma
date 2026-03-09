@@ -160,6 +160,7 @@ model Message {
   body        String           @db.Text
   wamid       String?          @unique // WhatsApp Message ID untuk deduplication
   mediaUrl    String?          @map("media_url") @db.Text
+  filename    String?          @map("filename") // Original filename untuk DOCUMENT type
   sentById    String?          @map("sent_by_id") // Agent yang mengirim (untuk outbound & internal notes)
   replyToId   String?          @map("reply_to_id")
   isRead      Boolean          @default(false) @map("is_read")

@@ -50,6 +50,7 @@ export interface Message {
     body: string;
     wamid: string | null;
     mediaUrl: string | null;
+    filename: string | null;
     sentById: string | null;
     replyToId: string | null;
     replyTo: { id: string; body: string; direction: string; type: string; sentBy: { name: string } | null } | null;
