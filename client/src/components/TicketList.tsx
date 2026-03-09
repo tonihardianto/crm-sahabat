@@ -131,8 +131,8 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                         return (
                             <div
                                 key={ticket.id}
-                                className={`w-full text-left px-4 py-3 border-b border-border/40 transition-colors duration-100 hover:bg-accent/60 cursor-pointer relative group ${
-                                    isActive ? 'bg-accent' : ''
+                                className={`mx-2 text-left px-4 py-2 my-2 border-b border-border/40 transition-colors duration-100 hover:bg-secondary hover:rounded-xl cursor-pointer relative group ${
+                                    isActive ? 'bg-secondary rounded-xl my-2 ' : ''
                                 }`}
                             >
                                 <div onClick={() => onSelectTicket(ticket)} className="flex items-center gap-3 pr-7">

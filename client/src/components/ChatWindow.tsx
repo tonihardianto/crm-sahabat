@@ -483,16 +483,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                             </button>
                                         </div>
                                     ) : (msg.direction === 'OUTBOUND') ? (
-                                        <div className="group relative max-w-[70%] flex items-end gap-1">
-                                            {msg.type === 'TEXT' && (
-                                                <button
-                                                    onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
-                                                    className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 shrink-0 mb-1"
-                                                    title="Edit pesan"
-                                                >
-                                                    <Pencil className="w-3 h-3 text-blue-300" />
-                                                </button>
-                                            )}
+                                        <div className="group relative max-w-[70%]">
                                             <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30" style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}>
                                                 {msg.sentBy && (
                                                     <div className="flex items-center gap-1 mb-1">
@@ -520,13 +511,24 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     <MessageTicks msg={msg} />
                                                 </div>
                                             </div>
-                                            <button
-                                                onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40 shrink-0 mb-1"
-                                                title="Balas pesan"
-                                            >
-                                                <CornerUpLeft className="w-3 h-3 text-blue-300" />
-                                            </button>
+                                            <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                <button
+                                                    onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
+                                                    className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
+                                                    title="Balas pesan"
+                                                >
+                                                    <CornerUpLeft className="w-3 h-3 text-blue-300" />
+                                                </button>
+                                                {/* {msg.type === 'TEXT' && (
+                                                    <button
+                                                        onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
+                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
+                                                        title="Edit pesan"
+                                                    >
+                                                        <Pencil className="w-3 h-3 text-blue-300" />
+                                                    </button>
+                                                )} */}
+                                            </div>
                                         </div>
                                     ) : null}
                                 </div>

@@ -6,6 +6,8 @@ import { ContextPanel } from '@/components/ContextPanel';
 import { fetchArchivedTickets, fetchTicketById, restoreTicket as apiRestoreTicket, deleteTicket as apiDeleteTicket } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 export function ArchivePage() {
     const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -13,6 +15,7 @@ export function ArchivePage() {
     const [loading, setLoading] = useState(true);
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const [showContextPanel, setShowContextPanel] = useState(true);
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const isMobile = useMediaQuery('(max-width: 767px)');
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -72,13 +75,21 @@ export function ArchivePage() {
         }
     };
 
-    const handleDeleteTicket = async (ticketId: string) => {
-        if (!confirm('Hapus tiket ini secara permanen? Tindakan ini tidak dapat dibatalkan.')) return;
+    const handleDeleteTicket = (ticketId: string) => {
+        setDeleteTargetId(ticketId);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return;
         try {
-            await apiDeleteTicket(ticketId);
-            removeTicketFromState(ticketId);
+            await apiDeleteTicket(deleteTargetId);
+            removeTicketFromState(deleteTargetId);
+            toast.success('Tiket berhasil dihapus.');
         } catch (err) {
             console.error('Failed to delete ticket:', err);
+            toast.error('Gagal menghapus tiket. Coba lagi.');
+        } finally {
+            setDeleteTargetId(null);
         }
     };
 
@@ -94,6 +105,7 @@ export function ArchivePage() {
     }
 
     return (
+        <>
         <div className="flex h-full overflow-hidden">
             {/* TicketList */}
             <div className={`${isMobile ? (mobileView === 'list' ? 'flex w-full' : 'hidden') : 'flex'} flex-col`}>
@@ -127,5 +139,23 @@ export function ArchivePage() {
                 )}
             </div>
         </div>
+
+        <AlertDialog open={!!deleteTargetId} onOpenChange={(open) => { if (!open) setDeleteTargetId(null); }}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus Tiket Secara Permanen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Tindakan ini tidak dapat dibatalkan. Semua pesan dalam tiket ini akan ikut terhapus.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Hapus Permanen
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+        </>
     );
 }
