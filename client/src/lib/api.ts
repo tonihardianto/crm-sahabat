@@ -56,6 +56,7 @@ export interface Message {
     replyTo: { id: string; body: string; direction: string; type: string; sentBy: { name: string } | null } | null;
     isRead: boolean;
     isEdited: boolean;
+    isSystemNote: boolean;
     editedAt: string | null;
     deliveredAt: string | null;
     readAt: string | null;

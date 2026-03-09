@@ -479,7 +479,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <span className="text-[10px] text-amber-500/60">{formatTimestamp(msg.timestamp)}</span>
                                             </div>
                                             <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                {msg.sentBy && msg.type === 'TEXT' && (
+                                                {!msg.isSystemNote && msg.type === 'TEXT' && (
                                                     <button
                                                         onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
                                                         className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"

@@ -165,6 +165,7 @@ model Message {
   replyToId   String?          @map("reply_to_id")
   isRead      Boolean          @default(false) @map("is_read")
   isEdited    Boolean          @default(false) @map("is_edited")
+  isSystemNote Boolean         @default(false) @map("is_system_note")
   editedAt    DateTime?        @map("edited_at")
   timestamp   DateTime         @default(now()) // Waktu pesan dikirim/diterima
   deliveredAt DateTime?        @map("delivered_at")
