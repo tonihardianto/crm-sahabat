@@ -83,6 +83,24 @@ export function TicketsPage() {
         []
     );
 
+    const handleMessageStatus = useCallback(
+        (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' }) => {
+            setActiveTicket(prev => {
+                if (!prev || prev.id !== data.ticketId) return prev;
+                return {
+                    ...prev,
+                    messages: prev.messages.map(m => {
+                        if (m.wamid !== data.wamid) return m;
+                        if (data.status === 'delivered') return { ...m, deliveredAt: new Date().toISOString() };
+                        if (data.status === 'read') return { ...m, readAt: new Date().toISOString() };
+                        return m;
+                    }),
+                };
+            });
+        },
+        []
+    );
+
     // When a new outbound ticket is created via dialog, add it to list and select it
     const handleNewOutboundTicket = useCallback((ticket: Ticket) => {
         setTickets(prev => {
@@ -96,6 +114,7 @@ export function TicketsPage() {
         onNewMessage: handleNewMessage,
         onNewTicket: loadTickets,
         onMessageEdited: handleMessageEdited,
+        onMessageStatus: handleMessageStatus,
     });
 
     useEffect(() => { loadTickets(); }, [loadTickets]);

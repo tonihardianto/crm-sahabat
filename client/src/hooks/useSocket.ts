@@ -6,9 +6,10 @@ interface UseSocketOptions {
     onNewMessage?: (data: { ticketId: string; message: Message }) => void;
     onNewTicket?: (data: { ticket: Ticket }) => void;
     onMessageEdited?: (data: { ticketId: string; message: Message }) => void;
+    onMessageStatus?: (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' }) => void;
 }
 
-export function useSocket({ onNewMessage, onNewTicket, onMessageEdited }: UseSocketOptions) {
+export function useSocket({ onNewMessage, onNewTicket, onMessageEdited, onMessageStatus }: UseSocketOptions) {
     const socketRef = useRef<Socket | null>(null);
 
     const connect = useCallback(() => {
@@ -68,6 +69,17 @@ export function useSocket({ onNewMessage, onNewTicket, onMessageEdited }: UseSoc
             socket.off('message:edited', onMessageEdited);
         };
     }, [onMessageEdited]);
+
+    // Listen for message status updates (delivered / read)
+    useEffect(() => {
+        const socket = socketRef.current;
+        if (!socket || !onMessageStatus) return;
+
+        socket.on('message:status', onMessageStatus);
+        return () => {
+            socket.off('message:status', onMessageStatus);
+        };
+    }, [onMessageStatus]);
 
     return socketRef;
 }

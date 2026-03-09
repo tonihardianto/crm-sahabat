@@ -67,3 +67,10 @@ export function emitEditMessage(ticketId: string, message: Record<string, unknow
 export function emitNewTicket(ticket: Record<string, unknown>): void {
     getIO().emit("ticket:new", { ticket });
 }
+
+/**
+ * Emit event: status pesan diperbarui (delivered / read)
+ */
+export function emitMessageStatus(ticketId: string, wamid: string, status: "delivered" | "read"): void {
+    getIO().emit("message:status", { ticketId, wamid, status });
+}

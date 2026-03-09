@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2 } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck } from 'lucide-react';
 import { EmojiPicker } from '@/components/EmojiPicker';
 import type { Ticket, Message } from '@/lib/api';
 import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage } from '@/lib/api';
@@ -62,6 +62,13 @@ function groupMessagesByDate(messages: Message[]): Record<string, Message[]> {
 
 function getFileExtension(filename: string): string {
     return filename.split('.').pop()?.toUpperCase() || 'FILE';
+}
+
+function MessageTicks({ msg }: { msg: import('@/lib/api').Message }) {
+    if (msg.direction !== 'OUTBOUND' || !msg.wamid) return null;
+    if (msg.readAt) return <CheckCheck className="w-3.5 h-3.5 text-blue-300 shrink-0" />;
+    if (msg.deliveredAt) return <CheckCheck className="w-3.5 h-3.5 text-blue-200/50 shrink-0" />;
+    return <Check className="w-3.5 h-3.5 text-blue-200/50 shrink-0" />;
 }
 
 function DocBubble({ url, filename, variant }: { url: string; filename: string; variant: 'inbound' | 'outbound' }) {
@@ -474,6 +481,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <div className="flex items-center justify-end gap-1">
                                                     {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}
                                                     <span className="text-[10px] text-blue-200/50 mt-0">{formatTimestamp(msg.timestamp)}</span>
+                                                    <MessageTicks msg={msg} />
                                                 </div>
                                             </div>
                                         </div>

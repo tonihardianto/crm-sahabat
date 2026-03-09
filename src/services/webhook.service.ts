@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { emitNewMessage, emitNewTicket } from "../lib/socket";
+import { emitNewMessage, emitNewTicket, emitMessageStatus } from "../lib/socket";
 import { generateTicketNumber } from "../utils/generateTicketNumber";
 import { markAsRead, getMediaUrl, downloadMedia } from "../lib/whatsapp";
 import fs from "fs";
@@ -26,11 +26,19 @@ interface WAMessage {
     audio?: { id: string; mime_type: string };
 }
 
+interface WAStatus {
+    id: string; // wamid of the original message
+    status: "sent" | "delivered" | "read" | "failed";
+    timestamp: string;
+    recipient_id: string;
+}
+
 interface WAValue {
     messaging_product: string;
     metadata: { display_phone_number: string; phone_number_id: string };
     contacts?: WAContact[];
     messages?: WAMessage[];
+    statuses?: WAStatus[];
 }
 
 interface WAChange {
@@ -251,6 +259,30 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
             if (change.field !== "messages") continue;
 
             const value = change.value;
+
+            // Handle delivery/read status updates
+            if (value.statuses) {
+                for (const status of value.statuses) {
+                    try {
+                        if (status.status === "delivered") {
+                            const msg = await prisma.message.update({
+                                where: { wamid: status.id },
+                                data: { deliveredAt: new Date(parseInt(status.timestamp) * 1000) },
+                            });
+                            emitMessageStatus(msg.ticketId, status.id, "delivered");
+                        } else if (status.status === "read") {
+                            const msg = await prisma.message.update({
+                                where: { wamid: status.id },
+                                data: { readAt: new Date(parseInt(status.timestamp) * 1000) },
+                            });
+                            emitMessageStatus(msg.ticketId, status.id, "read");
+                        }
+                    } catch {
+                        // wamid may not exist yet (race condition) — ignore
+                    }
+                }
+            }
+
             if (!value.messages || !value.contacts) continue;
 
             for (const waMessage of value.messages) {
