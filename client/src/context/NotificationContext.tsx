@@ -4,9 +4,24 @@ import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
+export type NotificationItemType = 'message' | 'ticket_new' | 'handover' | 'assign';
+
+export interface NotificationItem {
+    id: string;
+    type: NotificationItemType;
+    title: string;
+    body: string;
+    detail?: string;
+    read: boolean;
+    createdAt: Date;
+}
+
 interface NotificationContextValue {
     unreadCount: number;
     resetUnread: () => void;
+    notifications: NotificationItem[];
+    clearNotifications: () => void;
+    markAllRead: () => void;
     notifyPermission: NotificationPermission;
     requestPermission: () => Promise<void>;
 }
@@ -14,6 +29,9 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue>({
     unreadCount: 0,
     resetUnread: () => {},
+    notifications: [],
+    clearNotifications: () => {},
+    markAllRead: () => {},
     notifyPermission: 'default',
     requestPermission: async () => {},
 });
@@ -40,10 +58,22 @@ function playNotificationSound() {
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
+    const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
         typeof Notification !== 'undefined' ? Notification.permission : 'default'
     );
     const socketRef = useRef<Socket | null>(null);
+
+    const addNotification = useCallback((item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) => {
+        const newItem: NotificationItem = {
+            ...item,
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            read: false,
+            createdAt: new Date(),
+        };
+        setNotifications(prev => [newItem, ...prev].slice(0, 50));
+        setUnreadCount(prev => prev + 1);
+    }, []);
 
     const requestPermission = useCallback(async () => {
         if (typeof Notification === 'undefined') return;
@@ -52,6 +82,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, []);
 
     const resetUnread = useCallback(() => {
+        setUnreadCount(0);
+    }, []);
+
+    const clearNotifications = useCallback(() => {
+        setNotifications([]);
+        setUnreadCount(0);
+    }, []);
+
+    const markAllRead = useCallback(() => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
         setUnreadCount(0);
     }, []);
 
@@ -80,12 +120,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             if (message.direction !== 'INBOUND') return;
 
             playNotificationSound();
-            setUnreadCount((prev) => prev + 1);
 
             const contactName = contact?.name ?? 'Kontak';
             const msgPreview = message.type !== 'TEXT'
                 ? `[${message.type ?? 'Media'}]`
                 : (message.body?.slice(0, 60) ?? '');
+
+            addNotification({
+                type: 'message',
+                title: `Pesan baru dari ${contactName}`,
+                body: msgPreview || 'Media diterima',
+            });
 
             toast.custom((t) => (
                 <div style={{ background: 'rgba(30,58,138,0.85)', border: '1px solid rgba(59,130,246,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#93c5fd', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
@@ -106,9 +151,14 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         socket.on('ticket:new', ({ ticket }: { ticket: { contact?: { name: string } } }) => {
             playNotificationSound();
-            setUnreadCount((prev) => prev + 1);
 
             const contactName = ticket.contact?.name ?? 'kontak';
+            addNotification({
+                type: 'ticket_new',
+                title: 'Tiket baru',
+                body: `Dari ${contactName}`,
+            });
+
             toast.custom((t) => (
                 <div style={{ background: 'rgba(120,53,15,0.85)', border: '1px solid rgba(245,158,11,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#fcd34d', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
                     <button onClick={() => toast.dismiss(t)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', color: '#fcd34d', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -133,7 +183,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             toAgentName: string;
         }) => {
             playNotificationSound();
-            setUnreadCount((prev) => prev + 1);
+            addNotification({
+                type: 'handover',
+                title: 'Tiket di-handover ke Anda',
+                body: `${ticketNumber} · ${contactName}`,
+                detail: `${fromAgent} → ${toAgentName}`,
+            });
             toast.custom((t) => (
                 <div style={{ background: 'rgba(109,40,217,0.85)', border: '1px solid rgba(167,139,250,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#c4b5fd', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
                     <button onClick={() => toast.dismiss(t)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', color: '#c4b5fd', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -161,7 +216,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             assignedBy: string;
         }) => {
             playNotificationSound();
-            setUnreadCount((prev) => prev + 1);
+            addNotification({
+                type: 'assign',
+                title: 'Tiket di-assign ke Anda',
+                body: `${ticketNumber} · ${contactName}`,
+                detail: `Oleh ${assignedBy}`,
+            });
             toast.custom((t) => (
                 <div style={{ background: 'rgba(5,78,22,0.85)', border: '1px solid rgba(34,197,94,0.35)', borderRadius: '12px', padding: '12px 16px', color: '#86efac', minWidth: '260px', backdropFilter: 'blur(8px)', boxShadow: '0 4px 24px rgba(0,0,0,0.4)', position: 'relative' }}>
                     <button onClick={() => toast.dismiss(t)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', color: '#86efac', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
@@ -187,7 +247,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [user?.userId]);
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifyPermission, requestPermission }}>
+        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission }}>
             {children}
         </NotificationContext.Provider>
     );
