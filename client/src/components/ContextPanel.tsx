@@ -1,4 +1,4 @@
-import { Tag, ExternalLink, ChevronDown, X } from 'lucide-react';
+import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import type { Ticket } from '@/lib/api';
 import { updateTicket } from '@/lib/api';
 import { Card, CardContent } from '@/components/ui/card';
@@ -85,13 +85,8 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                 )}
             </div>
             <ScrollArea className="flex-1 overflow-y-auto">
-                {/* Client Detail */}
+                {/* Ticket & Client Detail */}
                 <div className="p-3 border-b border-border">
-                    {/* <div className="flex items-center gap-2 mb-4">
-                        <Building2 className="w-4 h-4 text-blue-400" />
-                        <h3 className="text-sm font-semibold text-foreground">Client Detail</h3>
-                    </div> */}
-
                     <div className="space-y-3">
                         <Card className="py-2 px-3 gap-0">
                             <CardContent className="p-0">
@@ -133,6 +128,39 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                             </Card>
                         )}
 
+                        <div className="space-y-2.5 pt-1">
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Ticket</span>
+                                <span className="text-xs font-mono text-foreground/80">{ticket.ticketNumber}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Status</span>
+                                <Badge variant={statusMap[ticket.status] || "secondary"}>{ticket.status}</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Priority</span>
+                                <Badge variant={ticket.priority === 'URGENT' || ticket.priority === 'HIGH' ? 'destructive' : 'secondary'}>
+                                    {ticket.priority}
+                                </Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Category</span>
+                                <Badge variant="outline">{ticket.category}</Badge>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Assigned</span>
+                                <span className="text-xs text-foreground/80">{ticket.assignedAgent?.name || '—'}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Created</span>
+                                <span className="text-xs text-foreground/80">
+                                    {new Date(ticket.createdAt).toLocaleDateString('id-ID', {
+                                        day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                                    })}
+                                </span>
+                            </div>
+                        </div>
+
                         {ticket.clickupTaskUrl ? (
                             <a
                                 href={ticket.clickupTaskUrl}
@@ -152,47 +180,6 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                                 Open in ClickUp
                             </div>
                         )}
-                    </div>
-                </div>
-
-                {/* Ticket Info */}
-                <div className="p-5 border-b border-border">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Tag className="w-4 h-4 text-blue-400" />
-                        <h3 className="text-sm font-semibold text-foreground">Ticket Info</h3>
-                    </div>
-
-                    <div className="space-y-3 mb-4">
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Ticket</span>
-                            <span className="text-xs font-mono text-foreground/80">{ticket.ticketNumber}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Status</span>
-                            <Badge variant={statusMap[ticket.status] || "secondary"}>{ticket.status}</Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Priority</span>
-                            <Badge variant={ticket.priority === 'URGENT' || ticket.priority === 'HIGH' ? 'destructive' : 'secondary'}>
-                                {ticket.priority}
-                            </Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Category</span>
-                            <Badge variant="outline">{ticket.category}</Badge>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Assigned</span>
-                            <span className="text-xs text-foreground/80">{ticket.assignedAgent?.name || '—'}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                            <span className="text-xs text-muted-foreground">Created</span>
-                            <span className="text-xs text-foreground/80">
-                                {new Date(ticket.createdAt).toLocaleDateString('id-ID', {
-                                    day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-                                })}
-                            </span>
-                        </div>
                     </div>
                 </div>
 
