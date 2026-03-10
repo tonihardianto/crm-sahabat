@@ -162,7 +162,11 @@ export async function assignTicket(req: AuthRequest, res: Response): Promise<voi
 
         const updated = await prisma.ticket.update({
             where: { id: ticketId },
-            data: { assignedAgentId: agentId },
+            data: {
+                assignedAgentId: agentId,
+                claimedById: agentId,
+                claimedAt: new Date(),
+            },
             include: {
                 contact: { include: { client: true } },
                 claimedBy: { select: { id: true, name: true } },
@@ -172,7 +176,7 @@ export async function assignTicket(req: AuthRequest, res: Response): Promise<voi
         });
 
         // Buat internal note otomatis
-        const noteBody = `Tiket di-assign ke ${agent.name} oleh ${admin?.name ?? 'Admin'}`;
+        const noteBody = `Tiket di-assign dan di-claim oleh ${agent.name} (oleh ${admin?.name ?? 'Admin'})`;
         const note = await prisma.message.create({
             data: {
                 ticketId,
