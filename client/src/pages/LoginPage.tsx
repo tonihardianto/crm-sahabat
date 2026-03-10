@@ -4,7 +4,9 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Headset, Lock, Mail, AlertCircle } from 'lucide-react';
+import { Lock, Mail, AlertCircle } from 'lucide-react';
+import logoLight from '@/assets/images/logo-256.png';
+
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
@@ -39,15 +41,16 @@ export function LoginPage() {
             <div className="relative w-full max-w-md">
                 {/* Logo */}
                 <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-2xl shadow-blue-500/30 mb-4">
-                        <Headset className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 rounded-2xl bg-transparent flex items-center justify-center shadow-2xl shadow-blue-500/30 mb-4">
+                        {/* <Headset className="w-8 h-8 text-white" /> */}
+                        <img src={logoLight} alt="CRM WhatsApp Logo" className="w-16 h-16" />
                     </div>
-                    <h1 className="text-2xl font-bold text-foreground">CRM WhatsApp</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Customer Support Platform</p>
+                    <h1 className="text-2xl font-bold text-foreground">AIshaCRM Sahabat</h1>
+                    <p className="text-sm text-muted-foreground mt-1">Customer Support SIMRS Sahabat</p>
                 </div>
 
                 <Card className="border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm">
-                    <CardHeader className="space-y-1 pb-4">
+                    <CardHeader className="space-y-1 pb-4 text-center">
                         <CardTitle className="text-xl">Masuk ke Dashboard</CardTitle>
                         <CardDescription>Masukkan email dan password Anda</CardDescription>
                     </CardHeader>
@@ -68,7 +71,7 @@ export function LoginPage() {
                                         type="email"
                                         required
                                         autoComplete="email"
-                                        placeholder="admin@crm.local"
+                                        placeholder="yourname@example.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         className="pl-9"
@@ -91,10 +94,10 @@ export function LoginPage() {
                                     />
                                 </div>
                             </div>
-                            <Button type="submit" className="w-full mt-2" disabled={loading}>
+                            <Button type="submit" className={`w-full mt-2 text-white/70 ${loading ? 'cursor-not-allowed' : 'cursor-pointer'}`} disabled={loading}>
                                 {loading ? (
                                     <span className="flex items-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin text-white cursor-not-allowed" />
                                         Masuk...
                                     </span>
                                 ) : 'Masuk'}
@@ -104,7 +107,7 @@ export function LoginPage() {
                 </Card>
 
                 <p className="text-center text-xs text-muted-foreground mt-6">
-                    Hubungi administrator jika lupa password
+                    Hubungi administrator jika lupa password.
                 </p>
             </div>
         </div>
