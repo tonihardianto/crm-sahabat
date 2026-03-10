@@ -1,6 +1,8 @@
-import { useRef } from 'react';
-import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useAppSettings } from '@/context/AppSettingsContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 // ── Presets ──────────────────────────────────────────────────
 
@@ -167,6 +169,86 @@ function ColorPickerRow({
     );
 }
 
+// ── Change Password ────────────────────────────────────────────────────────
+
+function ChangePasswordForm() {
+    const [form, setForm] = useState({ current: '', next: '', confirm: '' });
+    const [show, setShow] = useState({ current: false, next: false, confirm: false });
+    const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+    const [message, setMessage] = useState('');
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (form.next !== form.confirm) {
+            setStatus('error');
+            setMessage('Konfirmasi password tidak cocok');
+            return;
+        }
+        if (form.next.length < 8) {
+            setStatus('error');
+            setMessage('Password baru minimal 8 karakter');
+            return;
+        }
+        setStatus('loading');
+        try {
+            const res = await fetch('/api/settings/change-password', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ currentPassword: form.current, newPassword: form.next }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Gagal mengubah password');
+            setStatus('success');
+            setMessage(data.message);
+            setForm({ current: '', next: '', confirm: '' });
+        } catch (err: unknown) {
+            setStatus('error');
+            setMessage(err instanceof Error ? err.message : 'Terjadi kesalahan');
+        }
+    };
+
+    const field = (key: 'current' | 'next' | 'confirm', label: string, placeholder: string) => (
+        <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted-foreground">{label}</label>
+            <div className="relative">
+                <Input
+                    type={show[key] ? 'text' : 'password'}
+                    value={form[key]}
+                    onChange={(e) => { setForm({ ...form, [key]: e.target.value }); setStatus('idle'); }}
+                    placeholder={placeholder}
+                    className="pr-9"
+                />
+                <button
+                    type="button"
+                    onClick={() => setShow({ ...show, [key]: !show[key] })}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    {show[key] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+            </div>
+        </div>
+    );
+
+    return (
+        <form onSubmit={handleSubmit} className="p-4 rounded-xl border border-border bg-card space-y-4">
+            {field('current', 'Password Saat Ini', '••••••••')}
+            {field('next', 'Password Baru', 'Min. 8 karakter')}
+            {field('confirm', 'Konfirmasi Password Baru', 'Ulangi password baru')}
+            {status !== 'idle' && (
+                <p className={`text-xs ${status === 'success' ? 'text-emerald-400' : status === 'error' ? 'text-red-400' : 'text-muted-foreground'}`}>
+                    {message || (status === 'loading' ? 'Menyimpan...' : '')}
+                </p>
+            )}
+            <div className="flex justify-end">
+                <Button type="submit" disabled={status === 'loading'} size="sm">
+                    {status === 'loading' ? 'Menyimpan...' : 'Ubah Password'}
+                </Button>
+            </div>
+        </form>
+    );
+}
+
 // ── Main page ─────────────────────────────────────────────────
 
 export function AppSettingsPage() {
@@ -226,14 +308,14 @@ export function AppSettingsPage() {
                                 role="switch"
                                 aria-checked={sidebarCollapsed}
                                 onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                                className={`relative shrink-0 rounded-full transition-colors ${
+                                className={`relative w-11 h-6 shrink-0 rounded-full overflow-hidden transition-colors ${
                                     sidebarCollapsed ? 'bg-primary' : 'bg-muted'
                                 }`}
-                                style={{ width: 44, height: 24 }}
                             >
                                 <span
-                                    className="absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform"
-                                    style={{ transform: sidebarCollapsed ? 'translateX(23px)' : 'translateX(3px)' }}
+                                    className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform duration-200 ${
+                                        sidebarCollapsed ? 'translate-x-[20px]' : 'translate-x-0'
+                                    }`}
                                 />
                             </button>
                         </div>
@@ -283,6 +365,15 @@ export function AppSettingsPage() {
                                 onChange={setInboundBubbleColor}
                             />
                         </div>
+                    </section>
+
+                    {/* Change Password */}
+                    <section className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-border">
+                            <KeyRound className="w-4 h-4 text-muted-foreground" />
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keamanan Akun</h2>
+                        </div>
+                        <ChangePasswordForm />
                     </section>
                 </div>
 
