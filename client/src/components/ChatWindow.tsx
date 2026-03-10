@@ -151,7 +151,6 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [clickupDialogMsg, setClickupDialogMsg] = useState<Message | null>(null);
     const [clickupDesc, setClickupDesc] = useState('');
     const [clickupPriority, setClickupPriority] = useState<number | undefined>(undefined);
-    const [clickupTags, setClickupTags] = useState('');
     const [clickupSelectedTags, setClickupSelectedTags] = useState<string[]>([]);
     const [clickupAvailableTags, setClickupAvailableTags] = useState<{ name: string; tag_fg: string; tag_bg: string }[]>([]);
     const [clickupTagsLoading, setClickupTagsLoading] = useState(false);
