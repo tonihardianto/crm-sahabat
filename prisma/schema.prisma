@@ -57,19 +57,34 @@ enum UserRole {
   AGENT
 }
 
+enum SlaTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
 // ============================================================
 // Clients (Rumah Sakit)
 // ============================================================
 
 model Client {
-  id         String   @id @default(cuid())
+  id         String       @id @default(cuid())
   name       String // Nama RS
-  address    String?  @db.Text
-  customerId String   @unique @map("customer_id") // ID Pelanggan
+  address    String?      @db.Text
+  customerId String       @unique @map("customer_id") // ID Pelanggan
   phone      String? // Nomor telepon utama RS
-  picId      String?  @map("pic_id") // PIC agent yang bertanggung jawab
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  picId      String?      @map("pic_id") // PIC agent yang bertanggung jawab
+  slaTier    SlaTier      @default(BRONZE) @map("sla_tier")
+  status     ClientStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   contacts Contact[]
   pic      User?     @relation("ClientPIC", fields: [picId], references: [id], onDelete: SetNull)

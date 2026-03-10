@@ -18,8 +18,24 @@ interface ClientData {
     phone: string | null;
     picId: string | null;
     pic: { id: string; name: string } | null;
+    slaTier: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM';
+    status: 'ACTIVE' | 'INACTIVE' | 'SUSPENDED';
     _count: { contacts: number };
 }
+
+const SLA_TIER_LABEL: Record<string, string> = { BRONZE: 'Bronze', SILVER: 'Silver', GOLD: 'Gold', PLATINUM: 'Platinum' };
+const SLA_TIER_CLASS: Record<string, string> = {
+    BRONZE: 'bg-orange-500/10 text-orange-400 border-orange-500/25',
+    SILVER: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
+    GOLD: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/25',
+    PLATINUM: 'bg-purple-500/10 text-purple-400 border-purple-500/25',
+};
+const STATUS_LABEL: Record<string, string> = { ACTIVE: 'Active', INACTIVE: 'Inactive', SUSPENDED: 'Suspended' };
+const STATUS_CLASS: Record<string, string> = {
+    ACTIVE: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+    INACTIVE: 'bg-slate-500/10 text-slate-400 border-slate-500/25',
+    SUSPENDED: 'bg-red-500/10 text-red-400 border-red-500/25',
+};
 
 const API = '/api/clients';
 
@@ -30,7 +46,7 @@ export function ClientsPage() {
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<ClientData | null>(null);
-    const [form, setForm] = useState({ name: '', customerId: '', address: '', phone: '', picId: '' });
+    const [form, setForm] = useState({ name: '', customerId: '', address: '', phone: '', picId: '', slaTier: 'BRONZE', status: 'ACTIVE' });
 
     const loadClients = async () => {
         try {
@@ -47,13 +63,13 @@ export function ClientsPage() {
 
     const openCreate = () => {
         setEditingClient(null);
-        setForm({ name: '', customerId: '', address: '', phone: '', picId: '' });
+        setForm({ name: '', customerId: '', address: '', phone: '', picId: '', slaTier: 'BRONZE', status: 'ACTIVE' });
         setModalOpen(true);
     };
 
     const openEdit = (c: ClientData) => {
         setEditingClient(c);
-        setForm({ name: c.name, customerId: c.customerId, address: c.address || '', phone: c.phone || '', picId: c.picId || '' });
+        setForm({ name: c.name, customerId: c.customerId, address: c.address || '', phone: c.phone || '', picId: c.picId || '', slaTier: c.slaTier, status: c.status });
         setModalOpen(true);
     };
 
@@ -124,6 +140,8 @@ export function ClientsPage() {
                                 <TableRow>
                                     <TableHead>Nama RS</TableHead>
                                     <TableHead>Customer ID</TableHead>
+                                    <TableHead>SLA Tier</TableHead>
+                                    <TableHead>Status</TableHead>
                                     <TableHead>PIC</TableHead>
                                     <TableHead>Alamat</TableHead>
                                     <TableHead>Telepon</TableHead>
@@ -145,6 +163,16 @@ export function ClientsPage() {
                                         <TableCell>
                                             <Badge variant="outline" className="gap-1 font-mono text-xs">
                                                 <Hash className="w-3 h-3" />{c.customerId}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={`text-xs ${SLA_TIER_CLASS[c.slaTier]}`}>
+                                                {SLA_TIER_LABEL[c.slaTier]}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={`text-xs ${STATUS_CLASS[c.status]}`}>
+                                                {STATUS_LABEL[c.status]}
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
@@ -215,6 +243,31 @@ export function ClientsPage() {
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Telepon</label>
                             <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="6231..." />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">SLA Tier</label>
+                                <Select value={form.slaTier} onValueChange={(v) => setForm({ ...form, slaTier: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="BRONZE">Bronze</SelectItem>
+                                        <SelectItem value="SILVER">Silver</SelectItem>
+                                        <SelectItem value="GOLD">Gold</SelectItem>
+                                        <SelectItem value="PLATINUM">Platinum</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">Status</label>
+                                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ACTIVE">Active</SelectItem>
+                                        <SelectItem value="INACTIVE">Inactive</SelectItem>
+                                        <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">PIC (Agent Penanggung Jawab)</label>

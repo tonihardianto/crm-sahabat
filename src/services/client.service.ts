@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { SlaTier, ClientStatus } from "@prisma/client/index.js";
 
 export async function listClients() {
     return prisma.client.findMany({
@@ -27,6 +28,8 @@ export async function createClient(data: {
     address?: string;
     phone?: string;
     picId?: string;
+    slaTier?: SlaTier;
+    status?: ClientStatus;
 }) {
     return prisma.client.create({
         data,
@@ -36,7 +39,7 @@ export async function createClient(data: {
 
 export async function updateClient(
     id: string,
-    data: { name?: string; customerId?: string; address?: string; phone?: string; picId?: string | null }
+    data: { name?: string; customerId?: string; address?: string; phone?: string; picId?: string | null; slaTier?: SlaTier; status?: ClientStatus }
 ) {
     return prisma.client.update({
         where: { id },
