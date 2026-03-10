@@ -1,6 +1,19 @@
 import prisma from "../lib/prisma";
 import { SlaTier, ClientStatus } from "@prisma/client/index.js";
 
+async function generateCustomerId(): Promise<string> {
+    const clients = await prisma.client.findMany({
+        select: { customerId: true },
+        where: { customerId: { startsWith: "RS-" } },
+    });
+    let max = 0;
+    for (const c of clients) {
+        const num = parseInt(c.customerId.replace("RS-", ""), 10);
+        if (!isNaN(num) && num > max) max = num;
+    }
+    return `RS-${String(max + 1).padStart(5, "0")}`;
+}
+
 export async function listClients() {
     return prisma.client.findMany({
         include: {
@@ -24,15 +37,16 @@ export async function getClientById(id: string) {
 
 export async function createClient(data: {
     name: string;
-    customerId: string;
+    customerId?: string;
     address?: string;
     phone?: string;
     picId?: string;
     slaTier?: SlaTier;
     status?: ClientStatus;
 }) {
+    const customerId = data.customerId || await generateCustomerId();
     return prisma.client.create({
-        data,
+        data: { ...data, customerId },
         include: { pic: { select: { id: true, name: true } } },
     });
 }

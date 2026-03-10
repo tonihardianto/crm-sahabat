@@ -75,7 +75,10 @@ export function ClientsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        const payload = { ...form, picId: form.picId || null };
+        const { customerId: _cid, ...createFields } = form;
+        const payload = editingClient
+            ? { ...form, picId: form.picId || null }
+            : { ...createFields, picId: form.picId || null };
         try {
             if (editingClient) {
                 await fetch(`${API}/${editingClient.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -223,7 +226,7 @@ export function ClientsPage() {
 
             {/* Dialog Form */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-                <DialogContent>
+                <DialogContent className='w-xxl'>
                     <DialogHeader>
                         <DialogTitle>{editingClient ? 'Edit Client' : 'Tambah Client'}</DialogTitle>
                     </DialogHeader>
@@ -232,10 +235,15 @@ export function ClientsPage() {
                             <label className="text-xs font-medium text-muted-foreground">Nama RS *</label>
                             <Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="contoh: RSUD Medika Utama" />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">Customer ID *</label>
-                            <Input required value={form.customerId} onChange={(e) => setForm({ ...form, customerId: e.target.value })} placeholder="contoh: RS-001" />
-                        </div>
+                        {editingClient && (
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">Customer ID</label>
+                                <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-border bg-muted/40 text-sm text-muted-foreground">
+                                    <Hash className="w-3.5 h-3.5 shrink-0" />
+                                    <span className="font-mono">{form.customerId}</span>
+                                </div>
+                            </div>
+                        )}
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Alamat</label>
                             <Textarea value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={2} placeholder="Jl. ..." />

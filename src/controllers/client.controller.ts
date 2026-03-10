@@ -27,12 +27,12 @@ export async function getClient(req: Request, res: Response): Promise<void> {
 
 export async function createClient(req: Request, res: Response): Promise<void> {
     try {
-        const { name, customerId, address, phone, picId, slaTier, status } = req.body;
-        if (!name || !customerId) {
-            res.status(400).json({ error: "name and customerId are required" });
+        const { name, address, phone, picId, slaTier, status } = req.body;
+        if (!name) {
+            res.status(400).json({ error: "name is required" });
             return;
         }
-        const client = await clientService.createClient({ name, customerId, address, phone, picId: picId || undefined, slaTier, status });
+        const client = await clientService.createClient({ name, address, phone, picId: picId || undefined, slaTier, status });
         res.status(201).json(client);
     } catch (error) {
         console.error("[Client] Error creating client:", error);
