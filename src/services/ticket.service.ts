@@ -95,6 +95,9 @@ export async function updateTicket(
             assignedAgent: {
                 select: { id: true, name: true },
             },
+            claimedBy: {
+                select: { id: true },
+            },
         },
     });
 }

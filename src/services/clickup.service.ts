@@ -99,6 +99,39 @@ export async function getSpaceTags(token: string, spaceId: string): Promise<{ na
     return data.tags;
 }
 
+const CRM_TO_CLICKUP_PRIORITY: Record<string, number> = {
+    URGENT: 1,
+    HIGH: 2,
+    MEDIUM: 3,
+    LOW: 4,
+};
+
+/**
+ * Update priority of a ClickUp task.
+ */
+export async function updateClickUpTaskPriority(
+    token: string,
+    taskId: string,
+    crmPriority: string
+): Promise<void> {
+    const priority = CRM_TO_CLICKUP_PRIORITY[crmPriority.toUpperCase()];
+    if (!priority) return;
+
+    const res = await fetch(`${CLICKUP_API}/task/${taskId}`, {
+        method: "PUT",
+        headers: {
+            Authorization: token,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority }),
+    });
+
+    if (!res.ok) {
+        const err = await res.text();
+        throw new Error(`ClickUp API error: ${res.status} — ${err}`);
+    }
+}
+
 /**
  * Link a ClickUp task to a CRM ticket.
  */

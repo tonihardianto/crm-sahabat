@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as ticketService from "../services/ticket.service";
+import * as clickupService from "../services/clickup.service";
 import { sendTemplateMessage } from "../lib/whatsapp";
 import { emitNewTicket, emitNewMessage, emitHandover, emitAssign } from "../lib/socket";
 import { AuthRequest } from "../middlewares/auth.middleware";
@@ -37,6 +38,23 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
             category,
             priority,
         });
+
+        // Sync priority to ClickUp if ticket has a linked task
+        if (priority && ticket.clickupTaskId) {
+            try {
+                const agentId = (ticket.claimedBy as { id: string } | null)?.id
+                    ?? (ticket.assignedAgent as { id: string } | null)?.id;
+                if (agentId) {
+                    const settings = await prisma.userSettings.findUnique({ where: { userId: agentId } });
+                    if (settings?.clickupToken) {
+                        await clickupService.updateClickUpTaskPriority(settings.clickupToken, ticket.clickupTaskId, priority);
+                    }
+                }
+            } catch (syncErr) {
+                console.warn("[ClickUp] Failed to sync priority:", syncErr);
+            }
+        }
+
         res.json(ticket);
     } catch (error) {
         console.error("[Ticket] Error updating ticket:", error);
