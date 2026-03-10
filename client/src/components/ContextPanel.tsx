@@ -1,8 +1,6 @@
 import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import type { Ticket } from '@/lib/api';
 import { updateTicket } from '@/lib/api';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ContextPanelProps {
@@ -18,37 +16,6 @@ const statusMap: Record<string, "default" | "secondary" | "destructive" | "outli
     RESOLVED: "secondary",
 };
 
-function SelectField({
-    label,
-    value,
-    options,
-    onChange,
-}: {
-    label: string;
-    value: string;
-    options: { value: string; label: string }[];
-    onChange: (value: string) => void;
-}) {
-    return (
-        <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1.5">{label}</label>
-            <div className="relative">
-                <select
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    className="w-full appearance-none px-3 py-2 text-sm bg-card border border-border rounded-lg text-foreground focus:outline-none focus:border-ring focus:ring-1 focus:ring-ring/30 transition-colors cursor-pointer"
-                >
-                    {options.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                            {opt.label}
-                        </option>
-                    ))}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            </div>
-        </div>
-    );
-}
 
 export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelProps) {
     if (!ticket) {
@@ -91,10 +58,10 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                             <span className="text-xs text-muted-foreground">Nama RS</span>
                             <span className="text-xs font-medium text-foreground">{ticket.contact.client.name}</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        {/* <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">Customer ID</span>
                             <span className="text-xs font-mono text-foreground/80">{ticket.contact.client.customerId}</span>
-                        </div>
+                        </div> */}
                         <div className="flex items-center justify-between">
                             <span className="text-xs text-muted-foreground">Contact</span>
                             <span className="text-xs text-foreground/80">{ticket.contact.name}</span>
@@ -119,17 +86,41 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Status</span>
-                                <Badge variant={statusMap[ticket.status] || "secondary"}>{ticket.status}</Badge>
+                                <div className="relative">
+                                    <select value={ticket.status} onChange={(e) => handleUpdate('status', e.target.value)}
+                                        className="appearance-none text-xs bg-card border border-border rounded-md pl-2 pr-6 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 cursor-pointer">
+                                        <option value="NEW">New</option>
+                                        <option value="OPEN">Open</option>
+                                        <option value="PENDING">Pending</option>
+                                        <option value="RESOLVED">Resolved</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                                </div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Priority</span>
-                                <Badge variant={ticket.priority === 'URGENT' || ticket.priority === 'HIGH' ? 'destructive' : 'secondary'}>
-                                    {ticket.priority}
-                                </Badge>
+                                <div className="relative">
+                                    <select value={ticket.priority} onChange={(e) => handleUpdate('priority', e.target.value)}
+                                        className="appearance-none text-xs bg-card border border-border rounded-md pl-2 pr-6 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 cursor-pointer">
+                                        <option value="LOW">Low</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH">High</option>
+                                        <option value="URGENT">Urgent</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                                </div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Category</span>
-                                <Badge variant="outline">{ticket.category}</Badge>
+                                <div className="relative">
+                                    <select value={ticket.category} onChange={(e) => handleUpdate('category', e.target.value)}
+                                        className="appearance-none text-xs bg-card border border-border rounded-md pl-2 pr-6 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-ring/30 cursor-pointer">
+                                        <option value="BUG">Bug</option>
+                                        <option value="FEATURE_REQUEST">Feature Request</option>
+                                        <option value="SERVICE">Service</option>
+                                    </select>
+                                    <ChevronDown className="absolute right-1.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+                                </div>
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className="text-xs text-muted-foreground">Assigned</span>
@@ -167,40 +158,7 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                     </div>
                 </div>
 
-                <Separator />
 
-                {/* Update Actions */}
-                <div className="p-5">
-                    <h3 className="text-sm font-semibold text-foreground mb-4">Update Ticket</h3>
-                    <div className="space-y-3">
-                        <SelectField label="Status" value={ticket.status}
-                            options={[
-                                { value: 'NEW', label: 'New' },
-                                { value: 'OPEN', label: 'Open' },
-                                { value: 'PENDING', label: 'Pending' },
-                                { value: 'RESOLVED', label: 'Resolved' },
-                            ]}
-                            onChange={(v) => handleUpdate('status', v)}
-                        />
-                        <SelectField label="Category" value={ticket.category}
-                            options={[
-                                { value: 'BUG', label: 'Bug' },
-                                { value: 'FEATURE_REQUEST', label: 'Feature Request' },
-                                { value: 'SERVICE', label: 'Service' },
-                            ]}
-                            onChange={(v) => handleUpdate('category', v)}
-                        />
-                        <SelectField label="Priority" value={ticket.priority}
-                            options={[
-                                { value: 'LOW', label: 'Low' },
-                                { value: 'MEDIUM', label: 'Medium' },
-                                { value: 'HIGH', label: 'High' },
-                                { value: 'URGENT', label: 'Urgent' },
-                            ]}
-                            onChange={(v) => handleUpdate('priority', v)}
-                        />
-                    </div>
-                </div>
             </ScrollArea>
         </aside>
     );
