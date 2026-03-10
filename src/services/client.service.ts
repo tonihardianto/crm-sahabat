@@ -4,6 +4,7 @@ export async function listClients() {
     return prisma.client.findMany({
         include: {
             _count: { select: { contacts: true } },
+            pic: { select: { id: true, name: true } },
         },
         orderBy: { name: "asc" },
     });
@@ -13,10 +14,9 @@ export async function getClientById(id: string) {
     return prisma.client.findUnique({
         where: { id },
         include: {
-            contacts: {
-                orderBy: { name: "asc" },
-            },
+            contacts: { orderBy: { name: "asc" } },
             _count: { select: { contacts: true } },
+            pic: { select: { id: true, name: true } },
         },
     });
 }
@@ -26,15 +26,23 @@ export async function createClient(data: {
     customerId: string;
     address?: string;
     phone?: string;
+    picId?: string;
 }) {
-    return prisma.client.create({ data });
+    return prisma.client.create({
+        data,
+        include: { pic: { select: { id: true, name: true } } },
+    });
 }
 
 export async function updateClient(
     id: string,
-    data: { name?: string; customerId?: string; address?: string; phone?: string }
+    data: { name?: string; customerId?: string; address?: string; phone?: string; picId?: string | null }
 ) {
-    return prisma.client.update({ where: { id }, data });
+    return prisma.client.update({
+        where: { id },
+        data,
+        include: { pic: { select: { id: true, name: true } } },
+    });
 }
 
 export async function deleteClient(id: string) {

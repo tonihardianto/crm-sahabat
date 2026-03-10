@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Building2, Plus, Search, Pencil, Trash2, MapPin, Phone, Hash } from 'lucide-react';
+import { Building2, Plus, Search, Pencil, Trash2, MapPin, Phone, Hash, UserCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { fetchAgents, type Agent } from '@/lib/api';
 
 interface ClientData {
     id: string;
@@ -14,6 +16,8 @@ interface ClientData {
     customerId: string;
     address: string | null;
     phone: string | null;
+    picId: string | null;
+    pic: { id: string; name: string } | null;
     _count: { contacts: number };
 }
 
@@ -21,41 +25,46 @@ const API = '/api/clients';
 
 export function ClientsPage() {
     const [clients, setClients] = useState<ClientData[]>([]);
+    const [agents, setAgents] = useState<Agent[]>([]);
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<ClientData | null>(null);
-    const [form, setForm] = useState({ name: '', customerId: '', address: '', phone: '' });
+    const [form, setForm] = useState({ name: '', customerId: '', address: '', phone: '', picId: '' });
 
     const loadClients = async () => {
         try {
-            const res = await fetch(API);
+            const res = await fetch(API, { credentials: 'include' });
             setClients(await res.json());
         } catch (err) { console.error(err); }
         finally { setLoading(false); }
     };
 
-    useEffect(() => { loadClients(); }, []);
+    useEffect(() => {
+        loadClients();
+        fetchAgents().then(setAgents).catch(console.error);
+    }, []);
 
     const openCreate = () => {
         setEditingClient(null);
-        setForm({ name: '', customerId: '', address: '', phone: '' });
+        setForm({ name: '', customerId: '', address: '', phone: '', picId: '' });
         setModalOpen(true);
     };
 
     const openEdit = (c: ClientData) => {
         setEditingClient(c);
-        setForm({ name: c.name, customerId: c.customerId, address: c.address || '', phone: c.phone || '' });
+        setForm({ name: c.name, customerId: c.customerId, address: c.address || '', phone: c.phone || '', picId: c.picId || '' });
         setModalOpen(true);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const payload = { ...form, picId: form.picId || null };
         try {
             if (editingClient) {
-                await fetch(`${API}/${editingClient.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+                await fetch(`${API}/${editingClient.id}`, { method: 'PATCH', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             } else {
-                await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) });
+                await fetch(API, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
             }
             setModalOpen(false);
             loadClients();
@@ -64,7 +73,7 @@ export function ClientsPage() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Hapus client ini? Semua contact akan dihapus.')) return;
-        try { await fetch(`${API}/${id}`, { method: 'DELETE' }); loadClients(); }
+        try { await fetch(`${API}/${id}`, { method: 'DELETE', credentials: 'include' }); loadClients(); }
         catch (err) { console.error(err); }
     };
 
@@ -115,6 +124,7 @@ export function ClientsPage() {
                                 <TableRow>
                                     <TableHead>Nama RS</TableHead>
                                     <TableHead>Customer ID</TableHead>
+                                    <TableHead>PIC</TableHead>
                                     <TableHead>Alamat</TableHead>
                                     <TableHead>Telepon</TableHead>
                                     <TableHead className="text-center">Contacts</TableHead>
@@ -136,6 +146,16 @@ export function ClientsPage() {
                                             <Badge variant="outline" className="gap-1 font-mono text-xs">
                                                 <Hash className="w-3 h-3" />{c.customerId}
                                             </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            {c.pic ? (
+                                                <div className="flex items-center gap-1.5 text-sm">
+                                                    <UserCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                                                    <span>{c.pic.name}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground text-sm">—</span>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-1 text-sm text-muted-foreground max-w-[200px] truncate">
@@ -195,6 +215,23 @@ export function ClientsPage() {
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Telepon</label>
                             <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="6231..." />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">PIC (Agent Penanggung Jawab)</label>
+                            <Select value={form.picId} onValueChange={(v) => setForm({ ...form, picId: v === '__none__' ? '' : v })}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Pilih agent..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__none__">— Tidak ada PIC —</SelectItem>
+                                    {agents.map((a) => (
+                                        <SelectItem key={a.id} value={a.id}>
+                                            {a.name}
+                                            <span className="ml-2 text-xs text-muted-foreground">{a.role}</span>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <DialogFooter>
                             <Button type="button" variant="secondary" onClick={() => setModalOpen(false)}>Batal</Button>

@@ -27,6 +27,7 @@ model User {
   assignedTickets Ticket[]      @relation("AssignedAgent")
   messages        Message[]     @relation("SentByAgent")
   claimedTickets  Ticket[]      @relation("ClaimedBy")
+  managedClients  Client[]      @relation("ClientPIC")
   settings        UserSettings?
 
   @@map("users")
@@ -66,10 +67,12 @@ model Client {
   address    String?  @db.Text
   customerId String   @unique @map("customer_id") // ID Pelanggan
   phone      String? // Nomor telepon utama RS
+  picId      String?  @map("pic_id") // PIC agent yang bertanggung jawab
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   contacts Contact[]
+  pic      User?     @relation("ClientPIC", fields: [picId], references: [id], onDelete: SetNull)
 
   @@map("clients")
 }
