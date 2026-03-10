@@ -18,13 +18,6 @@ function clickupStatusColor(status: string | null): string {
     return 'bg-muted text-muted-foreground'; // BACKLOG, TO DO, dll
 }
 
-const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-    NEW: "default",
-    OPEN: "secondary",
-    PENDING: "outline",
-    RESOLVED: "secondary",
-};
-
 
 export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelProps) {
     if (!ticket) {
