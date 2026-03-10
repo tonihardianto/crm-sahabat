@@ -133,10 +133,25 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                             </Card>
                         )}
 
-                        <button className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-colors cursor-pointer">
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            Open in ClickUp
-                        </button>
+                        {ticket.clickupTaskUrl ? (
+                            <a
+                                href={ticket.clickupTaskUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/20 transition-colors"
+                            >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Open in ClickUp
+                                {ticket.clickupStatus && (
+                                    <span className="ml-auto uppercase text-[10px] opacity-70">{ticket.clickupStatus}</span>
+                                )}
+                            </a>
+                        ) : (
+                            <div className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium rounded-lg bg-muted/40 border border-border text-muted-foreground cursor-not-allowed opacity-50">
+                                <ExternalLink className="w-3.5 h-3.5" />
+                                Open in ClickUp
+                            </div>
+                        )}
                     </div>
                 </div>
 
