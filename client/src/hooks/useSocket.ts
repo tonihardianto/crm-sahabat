@@ -7,9 +7,10 @@ interface UseSocketOptions {
     onNewTicket?: (data: { ticket: Ticket }) => void;
     onMessageEdited?: (data: { ticketId: string; message: Message }) => void;
     onMessageStatus?: (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' }) => void;
+    onTicketUpdated?: (data: { ticket: Ticket }) => void;
 }
 
-export function useSocket({ onNewMessage, onNewTicket, onMessageEdited, onMessageStatus }: UseSocketOptions) {
+export function useSocket({ onNewMessage, onNewTicket, onMessageEdited, onMessageStatus, onTicketUpdated }: UseSocketOptions) {
     const socketRef = useRef<Socket | null>(null);
 
     const connect = useCallback(() => {
@@ -80,6 +81,17 @@ export function useSocket({ onNewMessage, onNewTicket, onMessageEdited, onMessag
             socket.off('message:status', onMessageStatus);
         };
     }, [onMessageStatus]);
+
+    // Listen for ticket updates (e.g. ClickUp status sync)
+    useEffect(() => {
+        const socket = socketRef.current;
+        if (!socket || !onTicketUpdated) return;
+
+        socket.on('ticket:updated', onTicketUpdated);
+        return () => {
+            socket.off('ticket:updated', onTicketUpdated);
+        };
+    }, [onTicketUpdated]);
 
     return socketRef;
 }

@@ -5,6 +5,8 @@ export interface SettingsData {
     chatBg?: string | null;
     outboundBubbleColor?: string | null;
     inboundBubbleColor?: string | null;
+    clickupToken?: string | null;
+    clickupListId?: string | null;
 }
 
 export async function getSettings(userId: string) {
@@ -19,6 +21,8 @@ export async function getSettings(userId: string) {
         chatBg: null,
         outboundBubbleColor: null,
         inboundBubbleColor: null,
+        clickupToken: null,
+        clickupListId: null,
     };
 }
 

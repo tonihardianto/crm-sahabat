@@ -15,6 +15,10 @@ interface AppSettingsContextType {
     setOutboundBubbleColor: (v: string) => Promise<void>;
     inboundBubbleColor: string;
     setInboundBubbleColor: (v: string) => Promise<void>;
+    clickupToken: string;
+    setClickupToken: (v: string) => Promise<void>;
+    clickupListId: string;
+    setClickupListId: (v: string) => Promise<void>;
 }
 
 const defaults: AppSettings = {
@@ -22,6 +26,8 @@ const defaults: AppSettings = {
     chatBg: null,
     outboundBubbleColor: null,
     inboundBubbleColor: null,
+    clickupToken: null,
+    clickupListId: null,
 };
 
 const AppSettingsContext = createContext<AppSettingsContextType>({
@@ -36,6 +42,10 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
     setOutboundBubbleColor: async () => {},
     inboundBubbleColor: '',
     setInboundBubbleColor: async () => {},
+    clickupToken: '',
+    setClickupToken: async () => {},
+    clickupListId: '',
+    setClickupListId: async () => {},
 });
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
@@ -65,6 +75,8 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
     const setChatBg = (v: string) => updateSettings({ chatBg: v || null });
     const setOutboundBubbleColor = (v: string) => updateSettings({ outboundBubbleColor: v || null });
     const setInboundBubbleColor = (v: string) => updateSettings({ inboundBubbleColor: v || null });
+    const setClickupToken = (v: string) => updateSettings({ clickupToken: v || null });
+    const setClickupListId = (v: string) => updateSettings({ clickupListId: v || null });
 
     return (
         <AppSettingsContext.Provider
@@ -80,6 +92,10 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
                 setOutboundBubbleColor,
                 inboundBubbleColor: settings.inboundBubbleColor ?? '',
                 setInboundBubbleColor,
+                clickupToken: settings.clickupToken ?? '',
+                setClickupToken,
+                clickupListId: settings.clickupListId ?? '',
+                setClickupListId,
             }}
         >
             {children}

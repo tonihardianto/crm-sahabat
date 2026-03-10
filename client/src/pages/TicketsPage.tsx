@@ -113,11 +113,17 @@ export function TicketsPage() {
         loadTicketDetail(ticket.id);
     }, [loadTicketDetail]);
 
+    const handleTicketUpdated = useCallback((data: { ticket: Ticket }) => {
+        setTickets(prev => prev.map(t => t.id === data.ticket.id ? { ...t, ...data.ticket } : t));
+        setActiveTicket(prev => prev && prev.id === data.ticket.id ? { ...prev, ...data.ticket } : prev);
+    }, []);
+
     useSocket({
         onNewMessage: handleNewMessage,
         onNewTicket: loadTickets,
         onMessageEdited: handleMessageEdited,
         onMessageStatus: handleMessageStatus,
+        onTicketUpdated: handleTicketUpdated,
     });
 
     useEffect(() => { loadTickets(); }, [loadTickets]);

@@ -23,6 +23,9 @@ export interface Ticket {
     claimedBy: { id: string; name: string } | null;
     messages: Message[];
     _count?: { messages: number };
+    clickupTaskId: string | null;
+    clickupTaskUrl: string | null;
+    clickupStatus: string | null;
 }
 
 export interface Contact {
@@ -192,6 +195,8 @@ export interface AppSettings {
     chatBg: string | null;
     outboundBubbleColor: string | null;
     inboundBubbleColor: string | null;
+    clickupToken: string | null;
+    clickupListId: string | null;
 }
 
 export async function fetchAppSettings(): Promise<AppSettings> {
@@ -207,6 +212,28 @@ export async function saveAppSettings(data: Partial<AppSettings>): Promise<AppSe
         body: JSON.stringify(data),
     });
     if (!res.ok) throw new Error('Failed to save settings');
+    return res.json();
+}
+
+export async function createClickUpTask(messageId: string, description: string): Promise<{ taskId: string; taskUrl: string; status: string }> {
+    const res = await apiFetch(`${API_BASE}/clickup/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, description }),
+    });
+    if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to create ClickUp task');
+    }
+    return res.json();
+}
+
+export async function verifyClickUpToken(token: string): Promise<{ valid: boolean; user?: { username: string; email: string } }> {
+    const res = await apiFetch(`${API_BASE}/clickup/verify-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+    });
     return res.json();
 }
 

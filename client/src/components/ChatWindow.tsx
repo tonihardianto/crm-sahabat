@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft } from 'lucide-react';
+import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft, ExternalLink, Loader2 } from 'lucide-react';
 import { EmojiPicker, EmojiPickerSearch, EmojiPickerContent, EmojiPickerFooter } from '@/components/ui/emoji-picker';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate, createClickUpTask } from '@/lib/api';
 import { HandoverDialog } from '@/components/HandoverDialog';
 import { AssignDialog } from '@/components/AssignDialog';
 import { useAuth } from '@/context/AuthContext';
@@ -148,6 +148,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [replyingTo, setReplyingTo] = useState<Message | null>(null);
     const [templateDialog, setTemplateDialog] = useState<{ tpl: TemplateData; vars: Record<number, string> } | null>(null);
     const [sendingTemplate, setSendingTemplate] = useState(false);
+    const [clickupDialogMsg, setClickupDialogMsg] = useState<Message | null>(null);
+    const [clickupDesc, setClickupDesc] = useState('');
+    const [clickupSubmitting, setClickupSubmitting] = useState(false);
+    const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
     const { user } = useAuth();
     const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
@@ -437,6 +441,26 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 
             </div>
 
+            {/* ClickUp status bar */}
+            {ticket.clickupTaskId && (
+                <div className="flex items-center gap-2 px-4 py-1.5 border-b border-border bg-blue-500/5 shrink-0">
+                    <ExternalLink className="w-3 h-3 text-blue-400 shrink-0" />
+                    <span className="text-xs text-blue-300/80">ClickUp:</span>
+                    <span className="text-xs font-medium text-blue-300 uppercase">{ticket.clickupStatus ?? 'BACKLOG'}</span>
+                    <span className="flex-1" />
+                    {ticket.clickupTaskUrl && (
+                        <a
+                            href={ticket.clickupTaskUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300 transition-colors"
+                        >
+                            Open in ClickUp <ExternalLink className="w-2.5 h-2.5" />
+                        </a>
+                    )}
+                </div>
+            )}
+
             {/* Messages — relative wrapper so the floating badge can overlay */}
             <div className="flex-1 relative min-h-0">
                 {/* Floating badge */}
@@ -486,6 +510,15 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                         title="Edit pesan"
                                                     >
                                                         <Pencil className="w-3 h-3 text-amber-400" />
+                                                    </button>
+                                                )}
+                                                {!msg.isSystemNote && msg.type === 'TEXT' && (
+                                                    <button
+                                                        onClick={() => { setClickupDialogMsg(msg); setClickupDesc(''); setClickupResult(null); }}
+                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
+                                                        title="Kirim ke ClickUp"
+                                                    >
+                                                        <ExternalLink className="w-3 h-3 text-blue-400" />
                                                     </button>
                                                 )}
                                             </div>
@@ -835,6 +868,79 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         void updated;
                     }}
                 />
+            )}
+
+            {/* ClickUp Task Dialog */}
+            {clickupDialogMsg && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-5">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <ExternalLink className="w-4 h-4 text-blue-400" />
+                                <h3 className="text-sm font-semibold text-foreground">Buat Task ClickUp</h3>
+                            </div>
+                            <button onClick={() => { setClickupDialogMsg(null); setClickupResult(null); }} className="p-1 rounded hover:bg-accent">
+                                <X className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                        </div>
+
+                        {/* Task title preview */}
+                        <div className="mb-3 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                            <p className="text-[10px] font-semibold text-amber-400 mb-1">Judul Task (dari internal note)</p>
+                            <p className="text-xs text-amber-500/90 line-clamp-3">{clickupDialogMsg.body}</p>
+                        </div>
+
+                        {/* Description */}
+                        <div className="mb-4 space-y-1.5">
+                            <label className="text-xs font-medium text-muted-foreground">Deskripsi (opsional)</label>
+                            <textarea
+                                value={clickupDesc}
+                                onChange={(e) => setClickupDesc(e.target.value)}
+                                placeholder="Tambahkan detail tambahan untuk task ini..."
+                                rows={3}
+                                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
+                            />
+                        </div>
+
+                        {/* Result feedback */}
+                        {clickupResult && (
+                            <div className={`mb-3 px-3 py-2 rounded-lg text-xs ${clickupResult.success ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-red-500/10 border border-red-500/20 text-red-400'}`}>
+                                {clickupResult.message}
+                            </div>
+                        )}
+
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={() => { setClickupDialogMsg(null); setClickupResult(null); }}
+                                className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors"
+                            >
+                                {clickupResult?.success ? 'Tutup' : 'Batal'}
+                            </button>
+                            {!clickupResult?.success && (
+                                <button
+                                    onClick={async () => {
+                                        if (!clickupDialogMsg) return;
+                                        setClickupSubmitting(true);
+                                        try {
+                                            await createClickUpTask(clickupDialogMsg.id, clickupDesc);
+                                            setClickupResult({ success: true, message: 'Task berhasil dibuat di ClickUp!' });
+                                            onMessageSent(); // refresh messages to show system note
+                                        } catch (err) {
+                                            setClickupResult({ success: false, message: err instanceof Error ? err.message : 'Gagal membuat task' });
+                                        } finally {
+                                            setClickupSubmitting(false);
+                                        }
+                                    }}
+                                    disabled={clickupSubmitting}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-medium transition-colors disabled:opacity-50"
+                                >
+                                    {clickupSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                                    {clickupSubmitting ? 'Membuat...' : 'Buat Task'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

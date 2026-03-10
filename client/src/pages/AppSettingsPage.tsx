@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAppSettings } from '@/context/AppSettingsContext';
+import { verifyClickUpToken } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -164,6 +165,120 @@ function ColorPickerRow({
                 {isCustom && (
                     <span className="text-xs text-muted-foreground font-mono">{value}</span>
                 )}
+            </div>
+        </div>
+    );
+}
+
+// ── ClickUp Settings ──────────────────────────────────────────────────────
+
+function ClickUpSettingsSection() {
+    const { clickupToken, setClickupToken, clickupListId, setClickupListId } = useAppSettings();
+    const [tokenInput, setTokenInput] = useState(clickupToken);
+    const [listIdInput, setListIdInput] = useState(clickupListId);
+    const [showToken, setShowToken] = useState(false);
+    const [verifyState, setVerifyState] = useState<'idle' | 'loading' | 'ok' | 'error'>('idle');
+    const [verifiedUser, setVerifiedUser] = useState<string>('');
+
+    const handleVerify = async () => {
+        if (!tokenInput.trim()) return;
+        setVerifyState('loading');
+        try {
+            const data = await verifyClickUpToken(tokenInput.trim());
+            if (data.valid && data.user) {
+                setVerifyState('ok');
+                setVerifiedUser(data.user.username);
+                await setClickupToken(tokenInput.trim());
+            } else {
+                setVerifyState('error');
+                setVerifiedUser('');
+            }
+        } catch {
+            setVerifyState('error');
+            setVerifiedUser('');
+        }
+    };
+
+    const handleSaveListId = async () => {
+        await setClickupListId(listIdInput.trim());
+    };
+
+    return (
+        <div className="p-4 rounded-xl border border-border bg-card space-y-4">
+            {/* Token */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Personal Token</label>
+                <div className="flex gap-2">
+                    <div className="relative flex-1">
+                        <Input
+                            type={showToken ? 'text' : 'password'}
+                            value={tokenInput}
+                            onChange={(e) => { setTokenInput(e.target.value); setVerifyState('idle'); }}
+                            placeholder="pk_XXXXX_XXXXXXX"
+                            className="pr-9 font-mono text-xs"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowToken(!showToken)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            {showToken ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleVerify}
+                        disabled={verifyState === 'loading' || !tokenInput.trim()}
+                        className="shrink-0"
+                    >
+                        {verifyState === 'loading' ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : 'Verify'}
+                    </Button>
+                </div>
+                {verifyState === 'ok' && (
+                    <p className="flex items-center gap-1 text-xs text-emerald-400">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        Token valid — {verifiedUser}
+                    </p>
+                )}
+                {verifyState === 'error' && (
+                    <p className="flex items-center gap-1 text-xs text-red-400">
+                        <XCircle className="w-3.5 h-3.5" />
+                        Token tidak valid atau expired
+                    </p>
+                )}
+                <p className="text-[11px] text-muted-foreground">
+                    Dapatkan di ClickUp → Settings → Apps → API Token
+                </p>
+            </div>
+
+            {/* List ID */}
+            <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">List ID</label>
+                <div className="flex gap-2">
+                    <Input
+                        value={listIdInput}
+                        onChange={(e) => setListIdInput(e.target.value)}
+                        placeholder="901805723671"
+                        className="font-mono text-xs flex-1"
+                    />
+                    <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleSaveListId}
+                        disabled={!listIdInput.trim()}
+                        className="shrink-0"
+                    >
+                        Simpan
+                    </Button>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                    ID list tempat task akan dibuat. Ambil dari URL ClickUp board Anda.
+                </p>
             </div>
         </div>
     );
@@ -374,6 +489,18 @@ export function AppSettingsPage() {
                             <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keamanan Akun</h2>
                         </div>
                         <ChangePasswordForm />
+                    </section>
+
+                    {/* ClickUp Integration */}
+                    <section className="space-y-3">
+                        <div className="flex items-center gap-2 pb-2 border-b border-border">
+                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Integrasi ClickUp</h2>
+                        </div>
+                        <p className="text-xs text-muted-foreground -mt-1">
+                            Konfigurasi token dan List ID ClickUp milik Anda. Internal note dapat dikonversi menjadi task ClickUp.
+                        </p>
+                        <ClickUpSettingsSection />
                     </section>
                 </div>
 

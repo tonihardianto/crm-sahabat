@@ -92,3 +92,10 @@ export function emitNewTicket(ticket: Record<string, unknown>): void {
 export function emitMessageStatus(ticketId: string, wamid: string, status: "delivered" | "read"): void {
     getIO().emit("message:status", { ticketId, wamid, status });
 }
+
+/**
+ * Emit event: tiket diupdate (status, clickup, dll)
+ */
+export function emitTicketUpdate(ticket: Record<string, unknown>): void {
+    getIO().emit("ticket:updated", { ticket });
+}
