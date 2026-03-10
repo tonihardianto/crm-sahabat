@@ -76,6 +76,30 @@ export async function getClickUpUser(token: string): Promise<{ id: number; usern
 }
 
 /**
+ * Get space ID from a list ID.
+ */
+export async function getSpaceIdFromList(token: string, listId: string): Promise<string> {
+    const res = await fetch(`${CLICKUP_API}/list/${listId}`, {
+        headers: { Authorization: token },
+    });
+    if (!res.ok) throw new Error("Failed to fetch list info");
+    const data = await res.json() as { space: { id: string } };
+    return data.space.id;
+}
+
+/**
+ * Get all tags from a ClickUp space.
+ */
+export async function getSpaceTags(token: string, spaceId: string): Promise<{ name: string; tag_fg: string; tag_bg: string }[]> {
+    const res = await fetch(`${CLICKUP_API}/space/${spaceId}/tag`, {
+        headers: { Authorization: token },
+    });
+    if (!res.ok) throw new Error("Failed to fetch ClickUp tags");
+    const data = await res.json() as { tags: { name: string; tag_fg: string; tag_bg: string }[] };
+    return data.tags;
+}
+
+/**
  * Link a ClickUp task to a CRM ticket.
  */
 export async function linkTaskToTicket(

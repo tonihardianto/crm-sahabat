@@ -129,3 +129,24 @@ export async function verifyTokenHandler(req: AuthRequest, res: Response): Promi
         res.status(400).json({ valid: false, message: "Token ClickUp tidak valid" });
     }
 }
+
+/**
+ * GET /api/clickup/tags
+ * Fetch existing tags from agent's ClickUp space.
+ */
+export async function tagsHandler(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const userId = req.user!.userId;
+        const settings = await prisma.userSettings.findUnique({ where: { userId } });
+        if (!settings?.clickupToken || !settings?.clickupListId) {
+            res.json({ tags: [] });
+            return;
+        }
+        const spaceId = await clickupService.getSpaceIdFromList(settings.clickupToken, settings.clickupListId);
+        const tags = await clickupService.getSpaceTags(settings.clickupToken, spaceId);
+        res.json({ tags });
+    } catch (err) {
+        console.error("[ClickUp] tagsHandler error:", err);
+        res.json({ tags: [] });
+    }
+}

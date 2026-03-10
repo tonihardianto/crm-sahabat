@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft, ExternalLink, Loader2 } from 'lucide-react';
 import { EmojiPicker, EmojiPickerSearch, EmojiPickerContent, EmojiPickerFooter } from '@/components/ui/emoji-picker';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate, createClickUpTask } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate, createClickUpTask, fetchClickUpTags } from '@/lib/api';
 import { HandoverDialog } from '@/components/HandoverDialog';
 import { AssignDialog } from '@/components/AssignDialog';
 import { useAuth } from '@/context/AuthContext';
@@ -152,6 +152,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [clickupDesc, setClickupDesc] = useState('');
     const [clickupPriority, setClickupPriority] = useState<number | undefined>(undefined);
     const [clickupTags, setClickupTags] = useState('');
+    const [clickupSelectedTags, setClickupSelectedTags] = useState<string[]>([]);
+    const [clickupAvailableTags, setClickupAvailableTags] = useState<{ name: string; tag_fg: string; tag_bg: string }[]>([]);
+    const [clickupTagsLoading, setClickupTagsLoading] = useState(false);
     const [clickupSubmitting, setClickupSubmitting] = useState(false);
     const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
     const { user } = useAuth();
@@ -516,7 +519,17 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 )}
                                                 {!msg.isSystemNote && msg.type === 'TEXT' && (
                                                     <button
-                                                        onClick={() => { setClickupDialogMsg(msg); setClickupDesc(''); setClickupPriority(undefined); setClickupTags(''); setClickupResult(null); }}
+                                                        onClick={() => {
+                                                            setClickupDialogMsg(msg);
+                                                            setClickupDesc('');
+                                                            setClickupPriority(undefined);
+                                                            setClickupSelectedTags([]);
+                                                            setClickupResult(null);
+                                                            setClickupTagsLoading(true);
+                                                            fetchClickUpTags()
+                                                                .then(setClickupAvailableTags)
+                                                                .finally(() => setClickupTagsLoading(false));
+                                                        }}
                                                         className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
                                                         title="Kirim ke ClickUp"
                                                     >
@@ -904,8 +917,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             />
                         </div>
 
-                        {/* Priority + Tags row */}
-                        <div className="mb-4 grid grid-cols-2 gap-3">
+                        {/* Priority + Tags */}
+                        <div className="mb-4 space-y-3">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">Priority</label>
                                 <select
@@ -922,14 +935,40 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-medium text-muted-foreground">Tags</label>
-                                <input
-                                    type="text"
-                                    value={clickupTags}
-                                    onChange={(e) => setClickupTags(e.target.value)}
-                                    placeholder="bug, backend, urgent"
-                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
-                                />
-                                <p className="text-[10px] text-muted-foreground">Pisahkan dengan koma</p>
+                                {clickupTagsLoading ? (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                                        <Loader2 className="w-3 h-3 animate-spin" /> Memuat tags...
+                                    </div>
+                                ) : clickupAvailableTags.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {clickupAvailableTags.map((tag) => {
+                                            const selected = clickupSelectedTags.includes(tag.name);
+                                            return (
+                                                <button
+                                                    key={tag.name}
+                                                    type="button"
+                                                    onClick={() => setClickupSelectedTags(prev =>
+                                                        selected ? prev.filter(t => t !== tag.name) : [...prev, tag.name]
+                                                    )}
+                                                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
+                                                        selected
+                                                            ? 'opacity-100 ring-1 ring-white/30 scale-105'
+                                                            : 'opacity-50 hover:opacity-80'
+                                                    }`}
+                                                    style={{
+                                                        backgroundColor: tag.tag_bg + '33',
+                                                        borderColor: tag.tag_bg + '88',
+                                                        color: tag.tag_fg,
+                                                    }}
+                                                >
+                                                    {tag.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-[11px] text-muted-foreground">Belum ada tags di space ClickUp Anda.</p>
+                                )}
                             </div>
                         </div>
 
@@ -953,9 +992,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                         if (!clickupDialogMsg) return;
                                         setClickupSubmitting(true);
                                         try {
-                                            const tags = clickupTags.trim()
-                                                ? clickupTags.split(',').map(t => t.trim()).filter(Boolean)
-                                                : undefined;
+                                            const tags = clickupSelectedTags.length > 0 ? clickupSelectedTags : undefined;
                                             await createClickUpTask(clickupDialogMsg.id, clickupDesc, clickupPriority, tags);
                                             setClickupResult({ success: true, message: 'Task berhasil dibuat di ClickUp!' });
                                             onMessageSent();

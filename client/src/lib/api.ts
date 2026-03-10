@@ -242,6 +242,13 @@ export async function verifyClickUpToken(token: string): Promise<{ valid: boolea
     return res.json();
 }
 
+export async function fetchClickUpTags(): Promise<{ name: string; tag_fg: string; tag_bg: string }[]> {
+    const res = await apiFetch(`${API_BASE}/clickup/tags`);
+    if (!res.ok) return [];
+    const data = await res.json() as { tags: { name: string; tag_fg: string; tag_bg: string }[] };
+    return data.tags;
+}
+
 export async function archiveTicket(ticketId: string): Promise<Ticket> {
     const res = await apiFetch(`${API_BASE}/tickets/${ticketId}/archive`, { method: 'PATCH' });
     if (!res.ok) throw new Error('Failed to archive ticket');
