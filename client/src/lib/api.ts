@@ -215,11 +215,16 @@ export async function saveAppSettings(data: Partial<AppSettings>): Promise<AppSe
     return res.json();
 }
 
-export async function createClickUpTask(messageId: string, description: string): Promise<{ taskId: string; taskUrl: string; status: string }> {
+export async function createClickUpTask(
+    messageId: string,
+    description: string,
+    priority?: number,
+    tags?: string[]
+): Promise<{ taskId: string; taskUrl: string; status: string }> {
     const res = await apiFetch(`${API_BASE}/clickup/tasks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId, description }),
+        body: JSON.stringify({ messageId, description, priority, tags }),
     });
     if (!res.ok) {
         const err = await res.json();

@@ -12,7 +12,7 @@ import { emitNewMessage, emitTicketUpdate } from "../lib/socket";
 export async function createTaskHandler(req: AuthRequest, res: Response): Promise<void> {
     try {
         const userId = req.user!.userId;
-        const { messageId, description = '' } = req.body;
+        const { messageId, description = '', priority, tags } = req.body;
 
         if (!messageId) {
             res.status(400).json({ message: "messageId is required" });
@@ -48,7 +48,9 @@ export async function createTaskHandler(req: AuthRequest, res: Response): Promis
             settings.clickupToken,
             settings.clickupListId,
             message.body,
-            fullDescription
+            fullDescription,
+            priority,
+            tags
         );
 
         // Link task to ticket

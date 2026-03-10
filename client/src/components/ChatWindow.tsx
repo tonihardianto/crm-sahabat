@@ -150,6 +150,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [sendingTemplate, setSendingTemplate] = useState(false);
     const [clickupDialogMsg, setClickupDialogMsg] = useState<Message | null>(null);
     const [clickupDesc, setClickupDesc] = useState('');
+    const [clickupPriority, setClickupPriority] = useState<number | undefined>(undefined);
+    const [clickupTags, setClickupTags] = useState('');
     const [clickupSubmitting, setClickupSubmitting] = useState(false);
     const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
     const { user } = useAuth();
@@ -514,7 +516,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 )}
                                                 {!msg.isSystemNote && msg.type === 'TEXT' && (
                                                     <button
-                                                        onClick={() => { setClickupDialogMsg(msg); setClickupDesc(''); setClickupResult(null); }}
+                                                        onClick={() => { setClickupDialogMsg(msg); setClickupDesc(''); setClickupPriority(undefined); setClickupTags(''); setClickupResult(null); }}
                                                         className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
                                                         title="Kirim ke ClickUp"
                                                     >
@@ -891,7 +893,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         </div>
 
                         {/* Description */}
-                        <div className="mb-4 space-y-1.5">
+                        <div className="mb-3 space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Deskripsi (opsional)</label>
                             <textarea
                                 value={clickupDesc}
@@ -900,6 +902,35 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                 rows={3}
                                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-none"
                             />
+                        </div>
+
+                        {/* Priority + Tags row */}
+                        <div className="mb-4 grid grid-cols-2 gap-3">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">Priority</label>
+                                <select
+                                    value={clickupPriority ?? ''}
+                                    onChange={(e) => setClickupPriority(e.target.value ? Number(e.target.value) : undefined)}
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                >
+                                    <option value="">— Normal —</option>
+                                    <option value="1">🔴 Urgent</option>
+                                    <option value="2">🟠 High</option>
+                                    <option value="3">🔵 Normal</option>
+                                    <option value="4">⚪ Low</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-medium text-muted-foreground">Tags</label>
+                                <input
+                                    type="text"
+                                    value={clickupTags}
+                                    onChange={(e) => setClickupTags(e.target.value)}
+                                    placeholder="bug, backend, urgent"
+                                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                />
+                                <p className="text-[10px] text-muted-foreground">Pisahkan dengan koma</p>
+                            </div>
                         </div>
 
                         {/* Result feedback */}
@@ -922,9 +953,12 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                         if (!clickupDialogMsg) return;
                                         setClickupSubmitting(true);
                                         try {
-                                            await createClickUpTask(clickupDialogMsg.id, clickupDesc);
+                                            const tags = clickupTags.trim()
+                                                ? clickupTags.split(',').map(t => t.trim()).filter(Boolean)
+                                                : undefined;
+                                            await createClickUpTask(clickupDialogMsg.id, clickupDesc, clickupPriority, tags);
                                             setClickupResult({ success: true, message: 'Task berhasil dibuat di ClickUp!' });
-                                            onMessageSent(); // refresh messages to show system note
+                                            onMessageSent();
                                         } catch (err) {
                                             setClickupResult({ success: false, message: err instanceof Error ? err.message : 'Gagal membuat task' });
                                         } finally {

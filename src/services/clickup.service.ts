@@ -15,19 +15,21 @@ export async function createClickUpTask(
     token: string,
     listId: string,
     name: string,
-    description: string
+    description: string,
+    priority?: number,
+    tags?: string[]
 ): Promise<ClickUpTask> {
+    const body: Record<string, unknown> = { name, description, status: "BACKLOG" };
+    if (priority) body.priority = priority;
+    if (tags && tags.length > 0) body.tags = tags.map((t) => ({ name: t.trim() }));
+
     const res = await fetch(`${CLICKUP_API}/list/${listId}/task`, {
         method: "POST",
         headers: {
             Authorization: token,
             "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-            name,
-            description,
-            status: "BACKLOG",
-        }),
+        body: JSON.stringify(body),
     });
 
     if (!res.ok) {
