@@ -1,5 +1,5 @@
 import prisma from "../lib/prisma";
-import { emitNewMessage, emitNewTicket, emitMessageStatus } from "../lib/socket";
+import { emitNewMessage, emitNewTicket, emitMessageStatus, emitAssign } from "../lib/socket";
 import { generateTicketNumber } from "../utils/generateTicketNumber";
 import { markAsRead, getMediaUrl, downloadMedia } from "../lib/whatsapp";
 import fs from "fs";
@@ -108,6 +108,7 @@ async function findOrCreateContact(waId: string, profileName: string) {
 /**
  * Cari Ticket aktif (status != RESOLVED) untuk kontak.
  * Jika tidak ada, buat tiket baru dengan status NEW dan kategori SERVICE.
+ * Jika client memiliki PIC, langsung assign + claim ke PIC tersebut.
  */
 async function findOrCreateTicket(contactId: string) {
     // Cari tiket aktif (bukan RESOLVED)
@@ -127,10 +128,16 @@ async function findOrCreateTicket(contactId: string) {
                 data: { status: "OPEN" },
             });
         }
-        return { ticket, isNew: false };
+        return { ticket, isNew: false, picAgent: null };
     }
 
-    // Buat tiket baru
+    // Buat tiket baru — cek apakah contact punya PIC di client-nya
+    const contactWithPic = await prisma.contact.findUnique({
+        where: { id: contactId },
+        include: { client: { include: { pic: { select: { id: true, name: true } } } } },
+    });
+    const pic = contactWithPic?.client?.pic ?? null;
+
     const ticketNumber = await generateTicketNumber();
 
     ticket = await prisma.ticket.create({
@@ -140,11 +147,30 @@ async function findOrCreateTicket(contactId: string) {
             category: "SERVICE",
             status: "NEW",
             priority: "MEDIUM",
+            ...(pic ? {
+                assignedAgentId: pic.id,
+                claimedById: pic.id,
+                claimedAt: new Date(),
+            } : {}),
         },
     });
 
-    console.log(`[Webhook] New ticket created: ${ticket.ticketNumber}`);
-    return { ticket, isNew: true };
+    if (pic) {
+        // Buat internal system note tentang auto-assign
+        await prisma.message.create({
+            data: {
+                ticketId: ticket.id,
+                direction: "INTERNAL",
+                type: "TEXT",
+                body: `Tiket otomatis di-assign ke ${pic.name} sebagai PIC client.`,
+                isSystemNote: true,
+                timestamp: new Date(),
+            },
+        });
+    }
+
+    console.log(`[Webhook] New ticket created: ${ticket.ticketNumber}${pic ? ` (auto-assigned to PIC: ${pic.name})` : ""}`);
+    return { ticket, isNew: true, picAgent: pic };
 }
 
 /**
@@ -314,7 +340,7 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                     const contact = await findOrCreateContact(waMessage.from, profileName);
 
                     // 3) Find or create ticket
-                    const { ticket, isNew: isNewTicket } = await findOrCreateTicket(contact.id);
+                    const { ticket, isNew: isNewTicket, picAgent } = await findOrCreateTicket(contact.id);
 
                     // 4) Save message (with deduplication)
                     const message = await saveMessage(ticket.id, waMessage);
@@ -332,6 +358,18 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                                 client: { id: contact.client.id, name: contact.client.name },
                             },
                         });
+
+                        // Notifikasi PIC jika auto-assign
+                        if (picAgent) {
+                            emitAssign({
+                                agentId: picAgent.id,
+                                ticketId: ticket.id,
+                                ticketNumber: ticket.ticketNumber,
+                                agentName: picAgent.name,
+                                contactName: contact.name,
+                                autoAssigned: true,
+                            });
+                        }
                     }
 
                     emitNewMessage(ticket.id, message, { name: contact.name });
