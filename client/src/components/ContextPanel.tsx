@@ -1,7 +1,6 @@
 import { ExternalLink, ChevronDown, X } from 'lucide-react';
 import type { Ticket } from '@/lib/api';
 import { updateTicket } from '@/lib/api';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,44 +87,29 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                 {/* Ticket & Client Detail */}
                 <div className="p-3 border-b border-border">
                     <div className="space-y-3">
-                        <Card className="py-2 px-3 gap-0">
-                            <CardContent className="p-0">
-                                <p className="text-xs text-muted-foreground mb-0.5">Nama RS</p>
-                                <p className="text-sm font-medium text-foreground">{ticket.contact.client.name}</p>
-                            </CardContent>
-                        </Card>
-
-                        <div className="grid grid-cols-2 gap-2">
-                            <Card className="py-2 px-3 gap-0">
-                                <CardContent className="p-0">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Customer ID</p>
-                                    <p className="text-sm font-mono text-foreground/80">{ticket.contact.client.customerId}</p>
-                                </CardContent>
-                            </Card>
-                            <Card className="py-2 px-3 gap-0">
-                                <CardContent className="p-0">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Contact</p>
-                                    <p className="text-sm text-foreground/80 truncate">{ticket.contact.name}</p>
-                                </CardContent>
-                            </Card>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Nama RS</span>
+                            <span className="text-xs font-medium text-foreground">{ticket.contact.client.name}</span>
                         </div>
-
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Customer ID</span>
+                            <span className="text-xs font-mono text-foreground/80">{ticket.contact.client.customerId}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Contact</span>
+                            <span className="text-xs text-foreground/80">{ticket.contact.name}</span>
+                        </div>
                         {ticket.contact.position && (
-                            <Card className="py-2 px-3 gap-0">
-                                <CardContent className="p-0">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Jabatan</p>
-                                    <p className="text-sm text-foreground/80">{ticket.contact.position}</p>
-                                </CardContent>
-                            </Card>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Jabatan</span>
+                                <span className="text-xs text-foreground/80">{ticket.contact.position}</span>
+                            </div>
                         )}
-
                         {ticket.contact.client.address && (
-                            <Card className="py-2 px-3 gap-0">
-                                <CardContent className="p-0">
-                                    <p className="text-xs text-muted-foreground mb-0.5">Alamat</p>
-                                    <p className="text-sm text-foreground/80">{ticket.contact.client.address}</p>
-                                </CardContent>
-                            </Card>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-muted-foreground">Alamat</span>
+                                <span className="text-xs text-foreground/80 text-right max-w-[60%]">{ticket.contact.client.address}</span>
+                            </div>
                         )}
 
                         <div className="space-y-2.5 pt-1">
