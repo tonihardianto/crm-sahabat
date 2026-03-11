@@ -85,70 +85,68 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // ── Service Worker registration ───────────────────────────
     useEffect(() => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        // Register first, then wait for .ready to ensure SW is fully active
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .catch((err) => console.warn('[SW] Registration failed:', err));
         navigator.serviceWorker.ready
             .then(async (reg) => {
                 swRegRef.current = reg;
                 const existing = await reg.pushManager.getSubscription();
-                setPushEnabled(!!existing);
+                if (existing) {
+                    // Subscription exists in browser — ensure DB is in sync
+                    try {
+                        await savePushSubscription(existing.toJSON());
+                        setPushEnabled(true);
+                    } catch {
+                        // DB sync failed — don't show as enabled; user can re-enable manually
+                        setPushEnabled(false);
+                    }
+                }
             })
             .catch((err) => console.warn('[SW] Ready failed:', err));
-    }, []);
+    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Subscribe helper ──────────────────────────────────────
     const subscribePush = useCallback(async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        try {
-            // Fetch VAPID key first — if server doesn't have it configured, bail early
-            const vapidKey = await getVapidPublicKey();
-            if (!vapidKey) throw new Error('VAPID public key not available');
-            console.debug('[Push] VAPID key:', vapidKey.slice(0, 12) + '…');
 
-            // Full clean-slate: unsubscribe + unregister ALL service workers
-            // This clears any stale FCM registration that causes AbortError
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (const reg of registrations) {
-                const staleSub = await reg.pushManager.getSubscription();
-                if (staleSub) {
-                    try { await removePushSubscription(staleSub.endpoint); } catch { /* already gone */ }
-                    await staleSub.unsubscribe();
-                }
-                await reg.unregister();
+        // Fetch VAPID key first — bail early if server not configured
+        const vapidKey = await getVapidPublicKey();
+
+        // Unregister all existing SWs to get a clean FCM state
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        for (const reg of registrations) {
+            const staleSub = await reg.pushManager.getSubscription();
+            if (staleSub) {
+                try { await removePushSubscription(staleSub.endpoint); } catch { /* ok */ }
+                await staleSub.unsubscribe();
             }
-
-            // Fresh SW registration
-            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-            const reg = await navigator.serviceWorker.ready;
-            swRegRef.current = reg;
-
-            const appServerKey = urlBase64ToUint8Array(vapidKey);
-            const sub = await reg.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: appServerKey,
-            });
-            await savePushSubscription(sub.toJSON());
-            setPushEnabled(true);
-        } catch (err) {
-            console.error('[Push] Subscribe error:', err);
-            throw err;
+            await reg.unregister();
         }
+
+        // Fresh SW registration
+        await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+        const reg = await navigator.serviceWorker.ready;
+        swRegRef.current = reg;
+
+        const sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        });
+
+        // Save to server DB — if this fails the error propagates to togglePush
+        await savePushSubscription(sub.toJSON());
+        setPushEnabled(true);
     }, []);
 
     const unsubscribePush = useCallback(async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-        try {
-            const reg = await navigator.serviceWorker.ready;
-            const sub = await reg.pushManager.getSubscription();
-            if (sub) {
-                await removePushSubscription(sub.endpoint);
-                await sub.unsubscribe();
-            }
-            setPushEnabled(false);
-        } catch (err) {
-            console.error('[Push] Unsubscribe error:', err);
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+            try { await removePushSubscription(sub.endpoint); } catch { /* ok if already gone */ }
+            await sub.unsubscribe();
         }
+        setPushEnabled(false);
     }, []);
 
     const togglePush = useCallback(async () => {
@@ -157,25 +155,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setNotifyPermission(perm);
             if (perm !== 'granted') return;
         }
-        if (pushEnabled) {
-            await unsubscribePush();
-        } else {
-            await subscribePush();
+        try {
+            if (pushEnabled) {
+                await unsubscribePush();
+            } else {
+                await subscribePush();
+            }
+        } catch (err) {
+            console.error('[Push] togglePush error:', err);
         }
     }, [pushEnabled, subscribePush, unsubscribePush]);
-
-    // Auto-subscribe when permission is already granted and SW is ready
-    useEffect(() => {
-        if (notifyPermission === 'granted' && swRegRef.current && !pushEnabled) {
-            swRegRef.current.pushManager.getSubscription().then(async (existing) => {
-                if (!existing) {
-                    await subscribePush();
-                } else {
-                    setPushEnabled(true);
-                }
-            });
-        }
-    }, [notifyPermission, pushEnabled, subscribePush]);
 
     const addNotification = useCallback((item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) => {
         const newItem: NotificationItem = {
