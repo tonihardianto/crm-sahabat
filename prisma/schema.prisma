@@ -24,11 +24,12 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  assignedTickets Ticket[]      @relation("AssignedAgent")
-  messages        Message[]     @relation("SentByAgent")
-  claimedTickets  Ticket[]      @relation("ClaimedBy")
-  managedClients  Client[]      @relation("ClientPIC")
-  settings        UserSettings?
+  assignedTickets   Ticket[]           @relation("AssignedAgent")
+  messages          Message[]          @relation("SentByAgent")
+  claimedTickets    Ticket[]           @relation("ClaimedBy")
+  managedClients    Client[]           @relation("ClientPIC")
+  settings          UserSettings?
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -345,4 +346,23 @@ model QuickReply {
   updatedAt DateTime @updatedAt
 
   @@map("quick_replies")
+}
+
+// ============================================================
+// Push Subscriptions (Web Push per browser/device per user)
+// ============================================================
+
+model PushSubscription {
+  id           String   @id @default(cuid())
+  userId       String   @map("user_id")
+  endpoint     String   @db.Text
+  endpointHash String   @unique @map("endpoint_hash") @db.VarChar(64)
+  p256dh       String   @map("p256dh") @db.Text
+  auth         String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("push_subscriptions")
 }

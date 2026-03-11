@@ -340,3 +340,29 @@ export async function deleteQuickReply(id: string): Promise<void> {
     const res = await apiFetch(`${API_BASE}/quick-replies/${id}`, { method: 'DELETE' });
     if (!res.ok) throw new Error('Failed to delete quick reply');
 }
+
+// ── Web Push ──────────────────────────────────────────────────
+
+export async function getVapidPublicKey(): Promise<string> {
+    const res = await apiFetch(`${API_BASE}/push/vapid-public-key`);
+    if (!res.ok) throw new Error('Failed to get VAPID public key');
+    const data = await res.json() as { publicKey: string };
+    return data.publicKey;
+}
+
+export async function savePushSubscription(sub: PushSubscriptionJSON): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/push/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+    });
+    if (!res.ok) throw new Error('Failed to save push subscription');
+}
+
+export async function removePushSubscription(endpoint: string): Promise<void> {
+    await apiFetch(`${API_BASE}/push/unsubscribe`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint }),
+    });
+}

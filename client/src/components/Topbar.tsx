@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, Plus, User, Menu, Sun, Moon, Bell, MessageCircle, Ticket, UserCheck, ArrowRightLeft, BellOff, CheckCheck } from 'lucide-react';
+import { Search, Plus, User, Menu, Sun, Moon, Bell, BellRing, MessageCircle, Ticket, UserCheck, ArrowRightLeft, BellOff, CheckCheck } from 'lucide-react';
 import { useNotification } from '@/context/NotificationContext';
 import type { NotificationItemType } from '@/context/NotificationContext';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ interface TopbarProps {
 export function Topbar({ onMenuClick }: TopbarProps) {
     const { user, logout } = useAuth();
     const { theme, toggle } = useTheme();
-    const { unreadCount, notifications, markAllRead, clearNotifications, requestPermission, notifyPermission } = useNotification();
+    const { unreadCount, notifications, markAllRead, clearNotifications, requestPermission, notifyPermission, pushEnabled, togglePush } = useNotification();
     const navigate = useNavigate();
 
     return (
@@ -170,6 +170,19 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                         )}
                     </DropdownMenuContent>
                 </DropdownMenu>
+
+                {/* Push notification toggle */}
+                <button
+                    onClick={togglePush}
+                    className={`w-8 h-8 flex items-center justify-center rounded-md transition-colors ${
+                        pushEnabled
+                            ? 'text-blue-400 hover:bg-blue-500/10'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    }`}
+                    title={pushEnabled ? 'Nonaktifkan Push Notification' : 'Aktifkan Push Notification'}
+                >
+                    {pushEnabled ? <BellRing className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                </button>
 
                 {/* Dark/Light toggle */}
                 <button

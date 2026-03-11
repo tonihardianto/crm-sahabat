@@ -1,5 +1,6 @@
 import { Server as SocketIOServer } from "socket.io";
 import type { Server as HTTPServer } from "http";
+import * as pushService from "../services/push.service";
 
 let io: SocketIOServer;
 
@@ -46,6 +47,20 @@ export function emitNewMessage(
     contact?: { name: string }
 ): void {
     getIO().emit("message:new", { ticketId, message, contact });
+
+    // Push to all agents who have subscriptions (background, non-blocking)
+    const contactName = contact?.name ?? "Kontak";
+    const msgType = message.type as string | undefined;
+    const body = msgType && msgType !== "TEXT"
+        ? `[${msgType}]`
+        : ((message.body as string)?.slice(0, 80) ?? "Media diterima");
+
+    pushService.sendPushToAll({
+        title: `Pesan baru dari ${contactName}`,
+        body,
+        tag: `message-${ticketId}`,
+        url: "/tickets",
+    }).catch(console.error);
 }
 
 /**
@@ -55,6 +70,12 @@ export function emitHandover(payload: Record<string, unknown>): void {
     const toAgentId = payload.toAgentId as string | undefined;
     if (toAgentId) {
         getIO().to(`user:${toAgentId}`).emit("ticket:handover", payload);
+        pushService.sendPushToUsers([toAgentId], {
+            title: "Tiket di-handover ke Anda",
+            body: `${payload.ticketNumber} · ${payload.contactName} (dari ${payload.fromAgent})`,
+            tag: `handover-${payload.ticketNumber}`,
+            url: "/tickets",
+        }).catch(console.error);
     } else {
         getIO().emit("ticket:handover", payload);
     }
@@ -67,6 +88,12 @@ export function emitAssign(payload: Record<string, unknown>): void {
     const agentId = payload.agentId as string | undefined;
     if (agentId) {
         getIO().to(`user:${agentId}`).emit("ticket:assign", payload);
+        pushService.sendPushToUsers([agentId], {
+            title: "Tiket di-assign ke Anda",
+            body: `${payload.ticketNumber} · ${payload.contactName} — oleh ${payload.assignedBy}`,
+            tag: `assign-${payload.ticketNumber}`,
+            url: "/tickets",
+        }).catch(console.error);
     } else {
         getIO().emit("ticket:assign", payload);
     }
@@ -84,6 +111,15 @@ export function emitEditMessage(ticketId: string, message: Record<string, unknow
  */
 export function emitNewTicket(ticket: Record<string, unknown>): void {
     getIO().emit("ticket:new", { ticket });
+
+    // Push all agents
+    const contactName = (ticket.contact as { name?: string } | undefined)?.name ?? "Kontak";
+    pushService.sendPushToAll({
+        title: "Tiket baru masuk",
+        body: `Dari ${contactName}`,
+        tag: `ticket-new-${ticket.id}`,
+        url: "/tickets",
+    }).catch(console.error);
 }
 
 /**

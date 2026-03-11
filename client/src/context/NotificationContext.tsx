@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { getVapidPublicKey, savePushSubscription, removePushSubscription } from '@/lib/api';
 
 export type NotificationItemType = 'message' | 'ticket_new' | 'handover' | 'assign';
 
@@ -24,6 +25,8 @@ interface NotificationContextValue {
     markAllRead: () => void;
     notifyPermission: NotificationPermission;
     requestPermission: () => Promise<void>;
+    pushEnabled: boolean;
+    togglePush: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
@@ -34,6 +37,8 @@ const NotificationContext = createContext<NotificationContextValue>({
     markAllRead: () => {},
     notifyPermission: 'default',
     requestPermission: async () => {},
+    pushEnabled: false,
+    togglePush: async () => {},
 });
 
 function playNotificationSound() {
@@ -62,7 +67,80 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
         typeof Notification !== 'undefined' ? Notification.permission : 'default'
     );
+    const [pushEnabled, setPushEnabled] = useState(false);
+    const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
     const socketRef = useRef<Socket | null>(null);
+
+    // ── Service Worker registration ───────────────────────────
+    useEffect(() => {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(async (reg) => {
+                swRegRef.current = reg;
+                // Check if already subscribed
+                const existing = await reg.pushManager.getSubscription();
+                setPushEnabled(!!existing);
+            })
+            .catch((err) => console.warn('[SW] Registration failed:', err));
+    }, []);
+
+    // ── Subscribe helper ──────────────────────────────────────
+    const subscribePush = useCallback(async () => {
+        const reg = swRegRef.current;
+        if (!reg) return;
+        try {
+            const vapidKey = await getVapidPublicKey();
+            const sub = await reg.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: vapidKey,
+            });
+            await savePushSubscription(sub.toJSON());
+            setPushEnabled(true);
+        } catch (err) {
+            console.error('[Push] Subscribe error:', err);
+        }
+    }, []);
+
+    const unsubscribePush = useCallback(async () => {
+        const reg = swRegRef.current;
+        if (!reg) return;
+        try {
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                await removePushSubscription(sub.endpoint);
+                await sub.unsubscribe();
+            }
+            setPushEnabled(false);
+        } catch (err) {
+            console.error('[Push] Unsubscribe error:', err);
+        }
+    }, []);
+
+    const togglePush = useCallback(async () => {
+        if (typeof Notification !== 'undefined' && Notification.permission !== 'granted') {
+            const perm = await Notification.requestPermission();
+            setNotifyPermission(perm);
+            if (perm !== 'granted') return;
+        }
+        if (pushEnabled) {
+            await unsubscribePush();
+        } else {
+            await subscribePush();
+        }
+    }, [pushEnabled, subscribePush, unsubscribePush]);
+
+    // Auto-subscribe when permission is already granted and SW is ready
+    useEffect(() => {
+        if (notifyPermission === 'granted' && swRegRef.current && !pushEnabled) {
+            swRegRef.current.pushManager.getSubscription().then(async (existing) => {
+                if (!existing) {
+                    await subscribePush();
+                } else {
+                    setPushEnabled(true);
+                }
+            });
+        }
+    }, [notifyPermission, pushEnabled, subscribePush]);
 
     const addNotification = useCallback((item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) => {
         const newItem: NotificationItem = {
@@ -247,7 +325,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [user?.userId]);
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission }}>
+        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission, pushEnabled, togglePush }}>
             {children}
         </NotificationContext.Provider>
     );
