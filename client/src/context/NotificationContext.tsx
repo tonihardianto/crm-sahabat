@@ -85,23 +85,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // ── Service Worker registration ───────────────────────────
     useEffect(() => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        // Register first, then wait for .ready to ensure SW is fully active
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .catch((err) => console.warn('[SW] Registration failed:', err));
+        navigator.serviceWorker.ready
             .then(async (reg) => {
                 swRegRef.current = reg;
-                // Check if already subscribed
                 const existing = await reg.pushManager.getSubscription();
                 setPushEnabled(!!existing);
             })
-            .catch((err) => console.warn('[SW] Registration failed:', err));
+            .catch((err) => console.warn('[SW] Ready failed:', err));
     }, []);
 
     // ── Subscribe helper ──────────────────────────────────────
     const subscribePush = useCallback(async () => {
-        const reg = swRegRef.current;
-        if (!reg) return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         try {
+            // .ready guarantees an active (not just registered) service worker
+            const reg = await navigator.serviceWorker.ready;
+            swRegRef.current = reg;
             const vapidKey = await getVapidPublicKey();
-            // PushManager.subscribe requires a Uint8Array, not a raw base64url string
             const appServerKey = urlBase64ToUint8Array(vapidKey);
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
@@ -115,9 +118,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, []);
 
     const unsubscribePush = useCallback(async () => {
-        const reg = swRegRef.current;
-        if (!reg) return;
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         try {
+            const reg = await navigator.serviceWorker.ready;
             const sub = await reg.pushManager.getSubscription();
             if (sub) {
                 await removePushSubscription(sub.endpoint);
