@@ -42,17 +42,24 @@ export async function updateTicket(req: Request, res: Response): Promise<void> {
         // Sync priority to ClickUp if ticket has a linked task
         if (priority && ticket.clickupTaskId) {
             try {
-                const agentId = (ticket.claimedBy as { id: string } | null)?.id
-                    ?? (ticket.assignedAgent as { id: string } | null)?.id;
+                const agentId = ticket.claimedById ?? ticket.assignedAgentId;
+                console.log(`[ClickUp] Syncing priority ${priority} for task ${ticket.clickupTaskId}, agentId=${agentId}`);
                 if (agentId) {
                     const settings = await prisma.userSettings.findUnique({ where: { userId: agentId } });
                     if (settings?.clickupToken) {
                         await clickupService.updateClickUpTaskPriority(settings.clickupToken, ticket.clickupTaskId, priority);
+                        console.log(`[ClickUp] Priority synced successfully`);
+                    } else {
+                        console.warn(`[ClickUp] No clickupToken found for agentId=${agentId}`);
                     }
+                } else {
+                    console.warn(`[ClickUp] No agentId found on ticket ${ticket.id}`);
                 }
             } catch (syncErr) {
                 console.warn("[ClickUp] Failed to sync priority:", syncErr);
             }
+        } else {
+            if (priority) console.log(`[ClickUp] Skipping priority sync — no clickupTaskId on ticket ${req.params.id}`);
         }
 
         res.json(ticket);
