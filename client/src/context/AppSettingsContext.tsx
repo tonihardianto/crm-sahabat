@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchAppSettings, saveAppSettings } from '@/lib/api';
-import type { AppSettings } from '@/lib/api';
+import type { AppSettings, NotifPref } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface AppSettingsContextType {
@@ -20,6 +20,8 @@ interface AppSettingsContextType {
     setClickupToken: (v: string) => Promise<void>;
     clickupListId: string;
     setClickupListId: (v: string) => Promise<void>;
+    notifPref: NotifPref;
+    setNotifPref: (v: NotifPref) => Promise<void>;
 }
 
 const defaults: AppSettings = {
@@ -29,6 +31,7 @@ const defaults: AppSettings = {
     inboundBubbleColor: null,
     clickupToken: null,
     clickupListId: null,
+    notifPref: 'BOTH',
 };
 
 const AppSettingsContext = createContext<AppSettingsContextType>({
@@ -47,6 +50,8 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
     setClickupToken: async () => {},
     clickupListId: '',
     setClickupListId: async () => {},
+    notifPref: 'BOTH',
+    setNotifPref: async () => {},
 });
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
@@ -80,6 +85,7 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
     const setInboundBubbleColor = (v: string) => updateSettings({ inboundBubbleColor: v || null });
     const setClickupToken = (v: string) => updateSettings({ clickupToken: v || null });
     const setClickupListId = (v: string) => updateSettings({ clickupListId: v || null });
+    const setNotifPref = (v: NotifPref) => updateSettings({ notifPref: v });
 
     return (
         <AppSettingsContext.Provider
@@ -99,6 +105,8 @@ export function AppSettingsProvider({ children }: { children: React.ReactNode })
                 setClickupToken,
                 clickupListId: settings.clickupListId ?? '',
                 setClickupListId,
+                notifPref: settings.notifPref ?? 'BOTH',
+                setNotifPref,
             }}
         >
             {children}

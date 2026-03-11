@@ -17,7 +17,7 @@ export async function getSettingsHandler(req: AuthRequest, res: Response): Promi
 export async function updateSettingsHandler(req: AuthRequest, res: Response): Promise<void> {
     try {
         const userId = req.user!.userId;
-        const { sidebarCollapsed, chatBg, outboundBubbleColor, inboundBubbleColor, clickupToken, clickupListId } = req.body;
+        const { sidebarCollapsed, chatBg, outboundBubbleColor, inboundBubbleColor, clickupToken, clickupListId, notifPref } = req.body;
 
         const settings = await settingsService.upsertSettings(userId, {
             sidebarCollapsed,
@@ -26,6 +26,7 @@ export async function updateSettingsHandler(req: AuthRequest, res: Response): Pr
             inboundBubbleColor,
             clickupToken,
             clickupListId,
+            notifPref,
         });
         res.json(settings);
     } catch {

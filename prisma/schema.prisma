@@ -47,6 +47,7 @@ model UserSettings {
   inboundBubbleColor  String?  @map("inbound_bubble_color")
   clickupToken        String?  @map("clickup_token")
   clickupListId       String?  @map("clickup_list_id")
+  notifPref           NotifPref @default(BOTH) @map("notif_pref")
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
@@ -58,6 +59,12 @@ model UserSettings {
 enum UserRole {
   ADMIN
   AGENT
+}
+
+enum NotifPref {
+  INAPP
+  PUSH
+  BOTH
 }
 
 enum SlaTier {

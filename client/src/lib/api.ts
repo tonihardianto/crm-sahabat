@@ -191,6 +191,8 @@ export async function editMessage(ticketId: string, msgId: string, body: string)
 
 // ── App Settings ──────────────────────────────────────────────
 
+export type NotifPref = 'INAPP' | 'PUSH' | 'BOTH';
+
 export interface AppSettings {
     sidebarCollapsed: boolean;
     chatBg: string | null;
@@ -198,6 +200,7 @@ export interface AppSettings {
     inboundBubbleColor: string | null;
     clickupToken: string | null;
     clickupListId: string | null;
+    notifPref: NotifPref;
 }
 
 export async function fetchAppSettings(): Promise<AppSettings> {

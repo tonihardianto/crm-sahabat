@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useRef, useState, useCallback } f
 import { io, Socket } from 'socket.io-client';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
+import { useAppSettings } from '@/context/AppSettingsContext';
 import { getVapidPublicKey, savePushSubscription, removePushSubscription } from '@/lib/api';
 
 export type NotificationItemType = 'message' | 'ticket_new' | 'handover' | 'assign';
@@ -73,6 +74,9 @@ function urlBase64ToUint8Array(base64url: string): Uint8Array<ArrayBuffer> {
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
+    const { notifPref } = useAppSettings();
+    const inAppEnabled = notifPref === 'INAPP' || notifPref === 'BOTH';
+    const pushPrefEnabled = notifPref === 'PUSH' || notifPref === 'BOTH';
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
@@ -178,6 +182,19 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setUnreadCount(prev => prev + 1);
     }, []);
 
+    // Sync push subscription with notifPref
+    useEffect(() => {
+        if (!user) return;
+        if (pushPrefEnabled && notifyPermission === 'granted' && !pushEnabled) {
+            // Pref changed to include push — re-subscribe
+            subscribePush().catch(() => {});
+        } else if (!pushPrefEnabled && pushEnabled) {
+            // Pref changed to INAPP only — unsubscribe push
+            unsubscribePush().catch(() => {});
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [pushPrefEnabled, user]);
+
     const requestPermission = useCallback(async () => {
         if (typeof Notification === 'undefined') return;
         const perm = await Notification.requestPermission();
@@ -221,6 +238,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         socket.on('message:new', ({ message, contact }: { message: { direction: string; body?: string; type?: string }; contact?: { name: string } }) => {
             if (message.direction !== 'INBOUND') return;
+            if (!inAppEnabled) return;
 
             playNotificationSound();
 
@@ -253,6 +271,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
 
         socket.on('ticket:new', ({ ticket }: { ticket: { contact?: { name: string } } }) => {
+            if (!inAppEnabled) return;
             playNotificationSound();
 
             const contactName = ticket.contact?.name ?? 'kontak';
@@ -285,6 +304,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             fromAgent: string;
             toAgentName: string;
         }) => {
+            if (!inAppEnabled) return;
             playNotificationSound();
             addNotification({
                 type: 'handover',
@@ -318,6 +338,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             agentName: string;
             assignedBy: string;
         }) => {
+            if (!inAppEnabled) return;
             playNotificationSound();
             addNotification({
                 type: 'assign',

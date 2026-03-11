@@ -7,6 +7,7 @@ export interface SettingsData {
     inboundBubbleColor?: string | null;
     clickupToken?: string | null;
     clickupListId?: string | null;
+    notifPref?: 'INAPP' | 'PUSH' | 'BOTH';
 }
 
 export async function getSettings(userId: string) {
@@ -23,6 +24,7 @@ export async function getSettings(userId: string) {
         inboundBubbleColor: null,
         clickupToken: null,
         clickupListId: null,
+        notifPref: 'BOTH' as const,
     };
 }
 
