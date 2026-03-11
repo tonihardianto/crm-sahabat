@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Palette, Shield, Plug } from 'lucide-react';
 import { useAppSettings } from '@/context/AppSettingsContext';
 import { verifyClickUpToken } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -69,11 +69,10 @@ function ColorSwatch({
             type="button"
             title={label}
             onClick={onClick}
-            className={`w-9 h-9 rounded-full border-2 transition-all shrink-0 ${
-                selected
-                    ? 'border-primary ring-2 ring-primary/40 scale-110'
-                    : 'border-border hover:border-muted-foreground hover:scale-105'
-            } ${!value ? 'bg-muted' : ''}`}
+            className={`w-9 h-9 rounded-full border-2 transition-all shrink-0 ${selected
+                ? 'border-primary ring-2 ring-primary/40 scale-110'
+                : 'border-border hover:border-muted-foreground hover:scale-105'
+                } ${!value ? 'bg-muted' : ''}`}
             style={value ? { backgroundColor: value } : undefined}
         >
             {!value && (
@@ -134,11 +133,10 @@ function ColorPickerRow({
                     type="button"
                     title="Custom color"
                     onClick={() => inputRef.current?.click()}
-                    className={`w-9 h-9 rounded-full border-2 border-dashed transition-all shrink-0 flex items-center justify-center hover:scale-105 ${
-                        isCustom
-                            ? 'border-primary ring-2 ring-primary/40 scale-110'
-                            : 'border-border hover:border-muted-foreground'
-                    }`}
+                    className={`w-9 h-9 rounded-full border-2 border-dashed transition-all shrink-0 flex items-center justify-center hover:scale-105 ${isCustom
+                        ? 'border-primary ring-2 ring-primary/40 scale-110'
+                        : 'border-border hover:border-muted-foreground'
+                        }`}
                     style={isCustom ? { backgroundColor: value } : undefined}
                 >
                     {!isCustom && (
@@ -364,6 +362,16 @@ function ChangePasswordForm() {
     );
 }
 
+// ── Tab types ─────────────────────────────────────────────────
+
+type Tab = 'appearance' | 'security' | 'integration';
+
+const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4" /> },
+    { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
+    { id: 'integration', label: 'Integration', icon: <Plug className="w-4 h-4" /> },
+];
+
 // ── Main page ─────────────────────────────────────────────────
 
 export function AppSettingsPage() {
@@ -379,6 +387,8 @@ export function AppSettingsPage() {
         loading,
     } = useAppSettings();
 
+    const [activeTab, setActiveTab] = useState<Tab>('appearance');
+
     if (loading) {
         return (
             <div className="flex-1 flex items-center justify-center h-full">
@@ -390,231 +400,262 @@ export function AppSettingsPage() {
     return (
         <div className="h-full flex flex-col overflow-hidden">
             {/* Page header */}
-            <div className="px-6 py-4 border-b border-border bg-card/50 shrink-0">
+            <div className="px-6 pt-4 pb-0 border-b border-border bg-card/50 shrink-0">
                 <h1 className="text-lg font-semibold text-foreground">App Settings</h1>
-                <p className="text-xs text-muted-foreground mt-0.5">
+                <p className="text-xs text-muted-foreground mt-0.5 mb-3">
                     Sesuaikan tampilan aplikasi. Perubahan tersimpan otomatis ke akun Anda.
                 </p>
+
+                {/* Tab bar */}
+                <div className="flex gap-1">
+                    {TABS.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${activeTab === tab.id
+                                    ? 'border-primary text-primary bg-primary/5'
+                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                        >
+                            {tab.icon}
+                            {tab.label}
+                        </button>
+                    ))}
+                </div>
             </div>
 
-            {/* Two-column body */}
+            {/* Body */}
             <div className="flex-1 flex overflow-hidden">
 
-                {/* ── Left: Settings ── */}
-                <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 min-w-0">
+                {/* ── Left: Tab content ── */}
+                <div className="flex-1 overflow-y-auto px-6 py-6 min-w-0">
 
-                    {/* Sidebar */}
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border">
-                            <PanelLeft className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Sidebar
-                            </h2>
-                        </div>
-                        <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card">
-                            <div>
-                                <p className="text-sm font-medium text-foreground">Collapse Sidebar</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                    Tampilkan sidebar dalam mode minimalis (ikon saja)
-                                </p>
-                            </div>
-                            <button
-                                type="button"
-                                role="switch"
-                                aria-checked={sidebarCollapsed}
-                                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                                className={`relative w-11 h-6 shrink-0 rounded-full overflow-hidden transition-colors ${
-                                    sidebarCollapsed ? 'bg-primary' : 'bg-muted'
-                                }`}
-                            >
-                                <span
-                                    className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform duration-200 ${
-                                        sidebarCollapsed ? 'translate-x-[20px]' : 'translate-x-0'
-                                    }`}
-                                />
-                            </button>
-                        </div>
-                    </section>
-
-                    {/* Chat Background */}
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border">
-                            <Monitor className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Chat Background
-                            </h2>
-                        </div>
-                        <div className="p-4 rounded-xl border border-border bg-card">
-                            <ColorPickerRow
-                                label="Warna Background Area Chat"
-                                description="Warna latar belakang area pesan pada halaman Tickets"
-                                value={chatBg}
-                                presets={BG_PRESETS}
-                                onChange={setChatBg}
-                            />
-                        </div>
-                    </section>
-
-                    {/* Bubble Colors */}
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border">
-                            <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                Warna Bubble Chat
-                            </h2>
-                        </div>
-                        <div className="p-4 rounded-xl border border-border bg-card space-y-6">
-                            <ColorPickerRow
-                                label="Bubble Agent (Outbound)"
-                                description="Pesan yang dikirim oleh agen ke pelanggan"
-                                value={outboundBubbleColor}
-                                presets={OUTBOUND_PRESETS}
-                                onChange={setOutboundBubbleColor}
-                            />
-                            <div className="border-t border-border" />
-                            <ColorPickerRow
-                                label="Bubble Pelanggan (Inbound)"
-                                description="Pesan yang diterima dari pelanggan"
-                                value={inboundBubbleColor}
-                                presets={INBOUND_PRESETS}
-                                onChange={setInboundBubbleColor}
-                            />
-                        </div>
-                    </section>
-
-                    {/* Change Password */}
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border">
-                            <KeyRound className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keamanan Akun</h2>
-                        </div>
-                        <ChangePasswordForm />
-                    </section>
-
-                    {/* ClickUp Integration */}
-                    <section className="space-y-3">
-                        <div className="flex items-center gap-2 pb-2 border-b border-border">
-                            <ExternalLink className="w-4 h-4 text-muted-foreground" />
-                            <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Integrasi ClickUp</h2>
-                        </div>
-                        <p className="text-xs text-muted-foreground -mt-1">
-                            Konfigurasi token dan List ID ClickUp milik Anda. Internal note dapat dikonversi menjadi task ClickUp.
-                        </p>
-                        <ClickUpSettingsSection />
-                    </section>
-                </div>
-
-                {/* ── Right: Live Preview (sticky) ── */}
-                <div className="w-180 shrink-0 border-l border-border bg-card/30 flex flex-col overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border shrink-0">
-                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</p>
-                    </div>
-
-                    {/* Mock chat window */}
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        {/* Mock topbar */}
-                        <div className="px-3 py-2 border-b border-border bg-card/60 flex items-center gap-2 shrink-0">
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
-                                JD
-                            </div>
-                            <div>
-                                <p className="text-xs font-semibold text-foreground leading-none">John Doe</p>
-                                <p className="text-[10px] text-muted-foreground mt-0.5">RS Mitra Husada · TKT-00042</p>
-                            </div>
-                        </div>
-
-                        {/* Messages area */}
-                        <div
-                            className="flex-1 px-3 py-3 space-y-2 overflow-y-auto"
-                            style={{ backgroundColor: chatBg || undefined }}
-                        >
-                            {/* Date separator */}
-                            <div className="flex items-center justify-center my-1">
-                                <span className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted/80 rounded-full">
-                                    Today
-                                </span>
-                            </div>
-
-                            {/* Inbound */}
-                            <div className="flex justify-start">
-                                <div
-                                    className="px-2.5 py-1.5 rounded-xl rounded-bl-md text-xs max-w-[85%] border border-border bg-muted"
-                                    style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}
-                                >
-                                    <p style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>
-                                        Halo, ada yang bisa dibantu? 👋
-                                    </p>
-                                    <p className="text-[9px] text-right mt-0.5 opacity-50" style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>09:01</p>
+                    {/* ── Appearance tab ── */}
+                    {activeTab === 'appearance' && (
+                        <div className="space-y-8">
+                            {/* Sidebar */}
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <PanelLeft className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Sidebar
+                                    </h2>
                                 </div>
-                            </div>
-
-                            {/* Outbound */}
-                            <div className="flex justify-end">
-                                <div
-                                    className="bubble-bg px-2.5 py-1.5 rounded-xl rounded-br-md text-xs text-white max-w-[85%] border border-blue-500/30"
-                                    style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}
-                                >
-                                    <p>Selamat datang! Kami siap membantu Anda.</p>
-                                    <p className="text-[9px] text-right mt-0.5 opacity-60">09:02</p>
-                                </div>
-                            </div>
-
-                            {/* Inbound 2 */}
-                            <div className="flex justify-start">
-                                <div
-                                    className="px-2.5 py-1.5 rounded-xl rounded-bl-md text-xs max-w-[85%] border border-border bg-muted"
-                                    style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}
-                                >
-                                    <p style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>
-                                        Saya memiliki kendala di modul billing.
-                                    </p>
-                                    <p className="text-[9px] text-right mt-0.5 opacity-50" style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>09:03</p>
-                                </div>
-                            </div>
-
-                            {/* Internal note */}
-                            <div className="flex justify-center">
-                                <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                                    <div className="flex items-center gap-1 mb-0.5">
-                                        <StickyNote className="w-2.5 h-2.5 text-amber-400" />
-                                        <span className="text-[9px] font-medium text-amber-400">Internal Note — Agen A</span>
+                                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-card">
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">Collapse Sidebar</p>
+                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                            Tampilkan sidebar dalam mode minimalis (ikon saja)
+                                        </p>
                                     </div>
-                                    <p className="text-[10px] text-amber-500/90">Sudah di-escalate ke tim developer.</p>
+                                    <button
+                                        type="button"
+                                        role="switch"
+                                        aria-checked={sidebarCollapsed}
+                                        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                                        className={`relative w-11 h-6 shrink-0 rounded-full overflow-hidden transition-colors ${sidebarCollapsed ? 'bg-primary' : 'bg-muted'
+                                            }`}
+                                    >
+                                        <span
+                                            className={`absolute top-[3px] left-[3px] w-[18px] h-[18px] rounded-full bg-white shadow transition-transform duration-200 ${sidebarCollapsed ? 'translate-x-[20px]' : 'translate-x-0'
+                                                }`}
+                                        />
+                                    </button>
                                 </div>
-                            </div>
+                            </section>
 
-                            {/* Outbound 2 */}
-                            <div className="flex justify-end">
-                                <div
-                                    className="bubble-bg px-2.5 py-1.5 rounded-xl rounded-br-md text-xs text-white max-w-[85%] border border-blue-500/30"
-                                    style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}
-                                >
-                                    <p>Baik, kami akan segera tindak lanjuti 🙏</p>
-                                    <p className="text-[9px] text-right mt-0.5 opacity-60">09:05</p>
+                            {/* Chat Background */}
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <Monitor className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Chat Background
+                                    </h2>
                                 </div>
-                            </div>
+                                <div className="p-4 rounded-xl border border-border bg-card">
+                                    <ColorPickerRow
+                                        label="Warna Background Area Chat"
+                                        description="Warna latar belakang area pesan pada halaman Tickets"
+                                        value={chatBg}
+                                        presets={BG_PRESETS}
+                                        onChange={setChatBg}
+                                    />
+                                </div>
+                            </section>
 
-                            {/* Window timer badge */}
-                            <div className="flex justify-center pt-1">
-                                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10">
-                                    <Clock className="w-2.5 h-2.5" /> Time Left: 23h 12m
-                                </span>
-                            </div>
+                            {/* Bubble Colors */}
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Warna Bubble Chat
+                                    </h2>
+                                </div>
+                                <div className="p-4 rounded-xl border border-border bg-card space-y-6">
+                                    <ColorPickerRow
+                                        label="Bubble Agent (Outbound)"
+                                        description="Pesan yang dikirim oleh agen ke pelanggan"
+                                        value={outboundBubbleColor}
+                                        presets={OUTBOUND_PRESETS}
+                                        onChange={setOutboundBubbleColor}
+                                    />
+                                    <div className="border-t border-border" />
+                                    <ColorPickerRow
+                                        label="Bubble Pelanggan (Inbound)"
+                                        description="Pesan yang diterima dari pelanggan"
+                                        value={inboundBubbleColor}
+                                        presets={INBOUND_PRESETS}
+                                        onChange={setInboundBubbleColor}
+                                    />
+                                </div>
+                            </section>
+                        </div>
+                    )}
+
+                    {/* ── Security tab ── */}
+                    {activeTab === 'security' && (
+                        <div className="space-y-8">
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <KeyRound className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Keamanan Akun</h2>
+                                </div>
+                                <ChangePasswordForm />
+                            </section>
+                        </div>
+                    )}
+
+                    {/* ── Integration tab ── */}
+                    {activeTab === 'integration' && (
+                        <div className="space-y-8">
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Integrasi ClickUp</h2>
+                                </div>
+                                <p className="text-xs text-muted-foreground -mt-1">
+                                    Konfigurasi token dan List ID ClickUp milik Anda. Internal note dapat dikonversi menjadi task ClickUp.
+                                </p>
+                                <ClickUpSettingsSection />
+                            </section>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Right: Live Preview — only visible on Appearance tab ── */}
+                {activeTab === 'appearance' && (
+                    <div className="w-180 shrink-0 border-l border-border bg-card/30 flex flex-col overflow-hidden">
+                        <div className="px-4 py-3 border-b border-border shrink-0">
+                            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Preview</p>
                         </div>
 
-                        {/* Mock input bar */}
-                        <div className="px-3 py-2 border-t border-border bg-card/60 shrink-0">
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border">
-                                <span className="text-xs text-muted-foreground flex-1">Ketik pesan…</span>
-                                <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
-                                    <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
-                                        <path d="M2 8h10M8 3l5 5-5 5" />
-                                    </svg>
+                        {/* Mock chat window */}
+                        <div className="flex-1 flex flex-col overflow-hidden">
+                            {/* Mock topbar */}
+                            <div className="px-3 py-2 border-b border-border bg-card/60 flex items-center gap-2 shrink-0">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white text-[10px] font-bold shrink-0">
+                                    JD
+                                </div>
+                                <div>
+                                    <p className="text-xs font-semibold text-foreground leading-none">John Doe</p>
+                                    <p className="text-[10px] text-muted-foreground mt-0.5">RS Mitra Husada · TKT-00042</p>
+                                </div>
+                            </div>
+
+                            {/* Messages area */}
+                            <div
+                                className="flex-1 px-3 py-3 space-y-2 overflow-y-auto"
+                                style={{ backgroundColor: chatBg || undefined }}
+                            >
+                                {/* Date separator */}
+                                <div className="flex items-center justify-center my-1">
+                                    <span className="px-2 py-0.5 text-[10px] font-medium text-muted-foreground bg-muted/80 rounded-full">
+                                        Today
+                                    </span>
+                                </div>
+
+                                {/* Inbound */}
+                                <div className="flex justify-start">
+                                    <div
+                                        className="px-2.5 py-1.5 rounded-xl rounded-bl-md text-xs max-w-[85%] border border-border bg-muted"
+                                        style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}
+                                    >
+                                        <p style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>
+                                            Halo, ada yang bisa dibantu? 👋
+                                        </p>
+                                        <p className="text-[9px] text-right mt-0.5 opacity-50" style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>09:01</p>
+                                    </div>
+                                </div>
+
+                                {/* Outbound */}
+                                <div className="flex justify-end">
+                                    <div
+                                        className="bubble-bg px-2.5 py-1.5 rounded-xl rounded-br-md text-xs text-white max-w-[85%] border border-blue-500/30"
+                                        style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}
+                                    >
+                                        <p>Selamat datang! Kami siap membantu Anda.</p>
+                                        <p className="text-[9px] text-right mt-0.5 opacity-60">09:02</p>
+                                    </div>
+                                </div>
+
+                                {/* Inbound 2 */}
+                                <div className="flex justify-start">
+                                    <div
+                                        className="px-2.5 py-1.5 rounded-xl rounded-bl-md text-xs max-w-[85%] border border-border bg-muted"
+                                        style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}
+                                    >
+                                        <p style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>
+                                            Saya memiliki kendala di modul billing.
+                                        </p>
+                                        <p className="text-[9px] text-right mt-0.5 opacity-50" style={{ color: inboundBubbleColor ? (isDark(inboundBubbleColor) ? '#fff' : '#111') : undefined }}>09:03</p>
+                                    </div>
+                                </div>
+
+                                {/* Internal note */}
+                                <div className="flex justify-center">
+                                    <div className="max-w-[90%] px-2.5 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                        <div className="flex items-center gap-1 mb-0.5">
+                                            <StickyNote className="w-2.5 h-2.5 text-amber-400" />
+                                            <span className="text-[9px] font-medium text-amber-400">Internal Note — Agen A</span>
+                                        </div>
+                                        <p className="text-[10px] text-amber-500/90">Sudah di-escalate ke tim developer.</p>
+                                    </div>
+                                </div>
+
+                                {/* Outbound 2 */}
+                                <div className="flex justify-end">
+                                    <div
+                                        className="bubble-bg px-2.5 py-1.5 rounded-xl rounded-br-md text-xs text-white max-w-[85%] border border-blue-500/30"
+                                        style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}
+                                    >
+                                        <p>Baik, kami akan segera tindak lanjuti 🙏</p>
+                                        <p className="text-[9px] text-right mt-0.5 opacity-60">09:05</p>
+                                    </div>
+                                </div>
+
+                                {/* Window timer badge */}
+                                <div className="flex justify-center pt-1">
+                                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-medium text-emerald-400 border border-emerald-500/30 bg-emerald-500/10">
+                                        <Clock className="w-2.5 h-2.5" /> Time Left: 23h 12m
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Mock input bar */}
+                            <div className="px-3 py-2 border-t border-border bg-card/60 shrink-0">
+                                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted/60 border border-border">
+                                    <span className="text-xs text-muted-foreground flex-1">Ketik pesan…</span>
+                                    <div className="w-5 h-5 rounded-md bg-primary/20 flex items-center justify-center">
+                                        <svg viewBox="0 0 16 16" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-primary">
+                                            <path d="M2 8h10M8 3l5 5-5 5" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                )}
 
             </div>
         </div>
