@@ -101,15 +101,27 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const subscribePush = useCallback(async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         try {
-            const reg = await navigator.serviceWorker.ready;
-            swRegRef.current = reg;
-
-            // Clear any stale subscription first to avoid FCM conflicts
-            const existing = await reg.pushManager.getSubscription();
-            if (existing) await existing.unsubscribe();
-
+            // Fetch VAPID key first — if server doesn't have it configured, bail early
             const vapidKey = await getVapidPublicKey();
             if (!vapidKey) throw new Error('VAPID public key not available');
+            console.debug('[Push] VAPID key:', vapidKey.slice(0, 12) + '…');
+
+            // Full clean-slate: unsubscribe + unregister ALL service workers
+            // This clears any stale FCM registration that causes AbortError
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (const reg of registrations) {
+                const staleSub = await reg.pushManager.getSubscription();
+                if (staleSub) {
+                    try { await removePushSubscription(staleSub.endpoint); } catch { /* already gone */ }
+                    await staleSub.unsubscribe();
+                }
+                await reg.unregister();
+            }
+
+            // Fresh SW registration
+            await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+            const reg = await navigator.serviceWorker.ready;
+            swRegRef.current = reg;
 
             const appServerKey = urlBase64ToUint8Array(vapidKey);
             const sub = await reg.pushManager.subscribe({
