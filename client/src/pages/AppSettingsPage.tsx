@@ -367,9 +367,9 @@ function ChangePasswordForm() {
 type Tab = 'appearance' | 'security' | 'integration';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4" /> },
-    { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4" /> },
-    { id: 'integration', label: 'Integration', icon: <Plug className="w-4 h-4" /> },
+    { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4 text-violet-400" /> },
+    { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4 text-emerald-400" /> },
+    { id: 'integration', label: 'Integration', icon: <Plug className="w-4 h-4 text-orange-400" /> },
 ];
 
 // ── Main page ─────────────────────────────────────────────────
@@ -414,8 +414,8 @@ export function AppSettingsPage() {
                             type="button"
                             onClick={() => setActiveTab(tab.id)}
                             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-t-lg border-b-2 transition-colors ${activeTab === tab.id
-                                    ? 'border-primary text-primary bg-primary/5'
-                                    : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                ? 'border-primary text-primary bg-primary/5'
+                                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                                 }`}
                         >
                             {tab.icon}

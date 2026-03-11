@@ -336,7 +336,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             onClick={onBack}
                             className="w-8 h-8 flex items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors shrink-0"
                         >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
                         </button>
                     )}
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-semibold text-sm shrink-0">
@@ -349,7 +349,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         <p className="text-xs text-muted-foreground truncate">
                             {ticket.contact.client.name} · {ticket.ticketNumber}
                         </p>
-                        
+
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -371,7 +371,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                     : ticket.assignedAgent
                                         ? ticket.assignedAgent.name
                                         : 'Action'}
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-52">
@@ -443,7 +443,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                         </button>
                     )}
                 </div>
-                
+
             </div>
 
             {/* ClickUp status bar */}
@@ -485,127 +485,127 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 )}
 
                 <ScrollArea className="h-full px-5 py-0 overflow-y-auto" style={chatBg ? { backgroundColor: chatBg } : undefined}>
-                <div className="space-y-1 pt-7">
-                    {Object.entries(dateGroups).map(([dateKey, msgs]) => (
-                        <div key={dateKey}>
-                            <div className="flex items-center justify-center my-4">
-                                <span className="px-3 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-full">
-                                    {formatDate(msgs[0].timestamp)}
-                                </span>
-                            </div>
-                            {msgs.map((msg) => (
-                                <div key={msg.id} className={`flex mb-2 ${msg.direction === 'INBOUND' ? 'justify-start' : msg.direction === 'OUTBOUND' ? 'justify-end' : 'justify-center'}`}>
-                                    {msg.direction === 'INTERNAL' ? (
-                                        <div className="group relative max-w-[85%] px-2 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
-                                            <div className="flex items-center gap-1.5 mb-1">
-                                                <StickyNote className="w-3 h-3 text-amber-400" />
-                                                <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
-                                            </div>
-                                            {msg.replyTo && <QuotedMessage replyTo={msg.replyTo} variant="internal" />}
-                                            <p className="text-sm text-amber-500/90 whitespace-pre-wrap">{msg.body}</p>
-                                            <div className="flex items-center justify-end gap-1 mt-1">
-                                                {msg.isEdited && <span className="text-[10px] text-amber-500/50 italic">diedit</span>}
-                                                <span className="text-[10px] text-amber-500/60">{formatTimestamp(msg.timestamp)}</span>
-                                            </div>
-                                            <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                                                {!msg.isSystemNote && msg.type === 'TEXT' && (
-                                                    <button
-                                                        onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
-                                                        className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
-                                                        title="Edit pesan"
-                                                    >
-                                                        <Pencil className="w-3 h-3 text-amber-400" />
-                                                    </button>
-                                                )}
-                                                {!msg.isSystemNote && msg.type === 'TEXT' && (
-                                                    <button
-                                                        onClick={() => {
-                                                            setClickupDialogMsg(msg);
-                                                            setClickupDesc('');
-                                                            setClickupPriority(undefined);
-                                                            setClickupSelectedTags([]);
-                                                            setClickupTagSearch('');
-                                                            setClickupResult(null);
-                                                            setClickupTagsLoading(true);
-                                                            fetchClickUpTags()
-                                                                .then(setClickupAvailableTags)
-                                                                .finally(() => setClickupTagsLoading(false));
-                                                        }}
-                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
-                                                        title="Kirim ke ClickUp"
-                                                    >
-                                                        <ExternalLink className="w-3 h-3 text-blue-400" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ) : msg.direction === 'INBOUND' ? (
-                                        <div className="max-w-[70%] group relative">
-                                            <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border" style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}>
-                                                {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="inbound" /></div>}
-                                                {(msg.type === 'IMAGE') && msg.mediaUrl ? (
-                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
-                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[440px] max-h-[240px] rounded-lg mb-1" />
-                                                    </a>
-                                                ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
-                                                    <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
-                                                ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
-                                                    <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
-                                                ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="inbound" />
-                                                ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-foreground whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-muted-foreground">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
-                                                <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
-                                            </div>
-                                            <button
-                                                onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-accent"
-                                                title="Balas pesan"
-                                            >
-                                                <CornerUpLeft className="w-3 h-3 text-muted-foreground" />
-                                            </button>
-                                        </div>
-                                    ) : (msg.direction === 'OUTBOUND') ? (
-                                        <div className="group relative max-w-[70%]">
-                                            <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30" style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}>
-                                                {msg.sentBy && (
-                                                    <div className="flex items-center gap-1 mb-1">
-                                                        <User2 className="w-3 h-3 text-blue-200/70" />
-                                                        <span className="text-[10px] text-blue-200/70">{msg.sentBy.name}</span>
-                                                    </div>
-                                                )}
-                                                {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="outbound" /></div>}
-                                                {(msg.type === 'IMAGE') && msg.mediaUrl ? (
-                                                    <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
-                                                        <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
-                                                    </a>
-                                                ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
-                                                    <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
-                                                ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
-                                                    <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
-                                                ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
-                                                    <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="outbound" />
-                                                ) : null}
-                                                {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-white whitespace-pre-wrap">{msg.body}</p>}
-                                                {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-white/80">{msg.body}</p>}
-                                                {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
-                                                <div className="flex items-center justify-end gap-1">
-                                                    {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}
-                                                    <span className="text-[10px] text-blue-200/50 mt-0">{formatTimestamp(msg.timestamp)}</span>
-                                                    <MessageTicks msg={msg} />
+                    <div className="space-y-1 pt-7">
+                        {Object.entries(dateGroups).map(([dateKey, msgs]) => (
+                            <div key={dateKey}>
+                                <div className="flex items-center justify-center my-4">
+                                    <span className="px-3 py-1 text-[11px] font-medium text-muted-foreground bg-muted rounded-full">
+                                        {formatDate(msgs[0].timestamp)}
+                                    </span>
+                                </div>
+                                {msgs.map((msg) => (
+                                    <div key={msg.id} className={`flex mb-2 ${msg.direction === 'INBOUND' ? 'justify-start' : msg.direction === 'OUTBOUND' ? 'justify-end' : 'justify-center'}`}>
+                                        {msg.direction === 'INTERNAL' ? (
+                                            <div className="group relative max-w-[85%] px-2 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                                                <div className="flex items-center gap-1.5 mb-1">
+                                                    <StickyNote className="w-3 h-3 text-amber-400" />
+                                                    <span className="text-[10px] font-medium text-amber-400">Internal Note{msg.sentBy ? ` — ${msg.sentBy.name}` : ''}</span>
+                                                </div>
+                                                {msg.replyTo && <QuotedMessage replyTo={msg.replyTo} variant="internal" />}
+                                                <p className="text-sm text-amber-500/90 whitespace-pre-wrap">{msg.body}</p>
+                                                <div className="flex items-center justify-end gap-1 mt-1">
+                                                    {msg.isEdited && <span className="text-[10px] text-amber-500/50 italic">diedit</span>}
+                                                    <span className="text-[10px] text-amber-500/60">{formatTimestamp(msg.timestamp)}</span>
+                                                </div>
+                                                <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                    {!msg.isSystemNote && msg.type === 'TEXT' && (
+                                                        <button
+                                                            onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
+                                                            className="w-6 h-6 rounded-full bg-amber-500/20 border border-amber-500/30 flex items-center justify-center hover:bg-amber-500/40"
+                                                            title="Edit pesan"
+                                                        >
+                                                            <Pencil className="w-3 h-3 text-amber-400" />
+                                                        </button>
+                                                    )}
+                                                    {!msg.isSystemNote && msg.type === 'TEXT' && (
+                                                        <button
+                                                            onClick={() => {
+                                                                setClickupDialogMsg(msg);
+                                                                setClickupDesc('');
+                                                                setClickupPriority(undefined);
+                                                                setClickupSelectedTags([]);
+                                                                setClickupTagSearch('');
+                                                                setClickupResult(null);
+                                                                setClickupTagsLoading(true);
+                                                                fetchClickUpTags()
+                                                                    .then(setClickupAvailableTags)
+                                                                    .finally(() => setClickupTagsLoading(false));
+                                                            }}
+                                                            className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
+                                                            title="Kirim ke ClickUp"
+                                                        >
+                                                            <ExternalLink className="w-3 h-3 text-blue-400" />
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                        ) : msg.direction === 'INBOUND' ? (
+                                            <div className="max-w-[70%] group relative">
+                                                <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border" style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}>
+                                                    {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="inbound" /></div>}
+                                                    {(msg.type === 'IMAGE') && msg.mediaUrl ? (
+                                                        <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                            <img src={msg.mediaUrl} alt="image" className="max-w-[440px] max-h-[240px] rounded-lg mb-1" />
+                                                        </a>
+                                                    ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
+                                                        <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
+                                                    ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
+                                                        <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
+                                                    ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
+                                                        <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="inbound" />
+                                                    ) : null}
+                                                    {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-foreground whitespace-pre-wrap">{msg.body}</p>}
+                                                    {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-muted-foreground">{msg.body}</p>}
+                                                    {(msg.type !== 'TEXT' && msg.type !== 'DOCUMENT' && msg.body) && <p className="text-sm px-2 py-1 text-muted-foreground mt-1">{msg.body}</p>}
+                                                    <span className="text-[10px] text-muted-foreground mt-0 block text-right">{formatTimestamp(msg.timestamp)}</span>
+                                                </div>
                                                 <button
                                                     onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                    className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center hover:bg-blue-500/40"
+                                                    className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-accent"
                                                     title="Balas pesan"
                                                 >
-                                                    <CornerUpLeft className="w-3 h-3 text-blue-300" />
+                                                    <CornerUpLeft className="w-3 h-3 text-muted-foreground" />
                                                 </button>
-                                                {/* {msg.type === 'TEXT' && (
+                                            </div>
+                                        ) : (msg.direction === 'OUTBOUND') ? (
+                                            <div className="group relative max-w-[70%]">
+                                                <div className="px-1 py-1 rounded-xl rounded-br-md bubble-bg border border-blue-500/30" style={outboundBubbleColor ? { backgroundColor: outboundBubbleColor } : undefined}>
+                                                    {msg.sentBy && (
+                                                        <div className="flex items-center gap-1 mb-1">
+                                                            <User2 className="w-3 h-3 text-blue-200/70" />
+                                                            <span className="text-[10px] text-blue-200/70">{msg.sentBy.name}</span>
+                                                        </div>
+                                                    )}
+                                                    {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="outbound" /></div>}
+                                                    {(msg.type === 'IMAGE') && msg.mediaUrl ? (
+                                                        <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                            <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
+                                                        </a>
+                                                    ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
+                                                        <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
+                                                    ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
+                                                        <video controls src={msg.mediaUrl} className="max-w-[240px] rounded-lg mb-1" />
+                                                    ) : (msg.type === 'DOCUMENT') && msg.mediaUrl ? (
+                                                        <DocBubble url={msg.mediaUrl} filename={msg.filename || 'document'} variant="outbound" />
+                                                    ) : null}
+                                                    {msg.type === 'TEXT' && <p className="text-sm px-1 py-1 text-white whitespace-pre-wrap">{msg.body}</p>}
+                                                    {(msg.type === 'DOCUMENT' && msg.body) && <p className="text-sm px-1 py-1 text-white/80">{msg.body}</p>}
+                                                    {(msg.type !== 'TEXT' && msg.body && msg.type !== 'DOCUMENT') && <p className="text-sm px-2 py-1 text-white mt-1">{msg.body}</p>}
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        {msg.isEdited && <span className="text-[10px] text-blue-200/40 italic">diedit</span>}
+                                                        <span className="text-[10px] text-blue-200/50 mt-0">{formatTimestamp(msg.timestamp)}</span>
+                                                        <MessageTicks msg={msg} />
+                                                    </div>
+                                                </div>
+                                                <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                                                    <button
+                                                        onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
+                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center hover:bg-blue-500/40"
+                                                        title="Balas pesan"
+                                                    >
+                                                        <CornerUpLeft className="w-3 h-3 text-blue-300" />
+                                                    </button>
+                                                    {/* {msg.type === 'TEXT' && (
                                                     <button
                                                         onClick={() => { setEditingMsg(msg); setInputText(msg.body); setReplyingTo(null); }}
                                                         className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center hover:bg-blue-500/40"
@@ -614,16 +614,16 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                         <Pencil className="w-3 h-3 text-blue-300" />
                                                     </button>
                                                 )} */}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            ))}
-                        </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
-            </ScrollArea>
+                                        ) : null}
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                    </div>
+                </ScrollArea>
             </div>
 
             {/* Input Area */}
@@ -719,27 +719,27 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                     <Plus className="size-4" />
                                 </InputGroupButton>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent side="top" align="start" sideOffset={12} className="w-52">
+                            <DropdownMenuContent side="top" align="start" sideOffset={12} className="w-42 bg-card">
                                 {windowOpen && (
                                     <>
-                                        <DropdownMenuItem onClick={() => imageInputRef.current?.click()}>
-                                            <ImageIcon className="size-4" />
+                                        <DropdownMenuItem className='text-xs' onClick={() => imageInputRef.current?.click()}>
+                                            <ImageIcon className="size-3.5 text-blue-400" />
                                             <span>Gambar / Video</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => docInputRef.current?.click()}>
-                                            <File className="size-4" />
+                                        <DropdownMenuItem className='text-xs' onClick={() => docInputRef.current?.click()}>
+                                            <File className="size-3.5 text-emerald-400" />
                                             <span>Dokumen</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                     </>
                                 )}
-                                <DropdownMenuItem onClick={() => { setShowTemplatePicker(p => !p); setIsInternal(false); }}>
-                                    <FileText className="size-4" />
+                                <DropdownMenuItem className='text-xs' onClick={() => { setShowTemplatePicker(p => !p); setIsInternal(false); }}>
+                                    <FileText className="size-3.5 text-violet-400" />
                                     <span>Templates</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onClick={() => { setIsInternal(p => !p); setShowTemplatePicker(false); clearAttachment(); }}>
-                                    <StickyNote className="size-4" />
+                                <DropdownMenuItem className='text-xs' onClick={() => { setIsInternal(p => !p); setShowTemplatePicker(false); clearAttachment(); }}>
+                                    <StickyNote className="size-3.5 text-amber-400" />
                                     <span>{isInternal ? 'Batalkan Internal Note' : 'Internal Note'}</span>
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -928,10 +928,10 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                     className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                                 >
                                     <option value="">— Normal —</option>
-                                    <option value="1">🔴 Urgent</option>
-                                    <option value="2">🟠 High</option>
-                                    <option value="3">🔵 Normal</option>
-                                    <option value="4">⚪ Low</option>
+                                    <option value="1">Urgent</option>
+                                    <option value="2">High</option>
+                                    <option value="3">Normal</option>
+                                    <option value="4">Low</option>
                                 </select>
                             </div>
                             <div className="space-y-1.5">
