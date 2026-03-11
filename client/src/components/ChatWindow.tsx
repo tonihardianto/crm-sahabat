@@ -154,6 +154,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [clickupSelectedTags, setClickupSelectedTags] = useState<string[]>([]);
     const [clickupAvailableTags, setClickupAvailableTags] = useState<{ name: string; tag_fg: string; tag_bg: string }[]>([]);
     const [clickupTagsLoading, setClickupTagsLoading] = useState(false);
+    const [clickupTagSearch, setClickupTagSearch] = useState('');
     const [clickupSubmitting, setClickupSubmitting] = useState(false);
     const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
     const { user } = useAuth();
@@ -523,6 +524,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                             setClickupDesc('');
                                                             setClickupPriority(undefined);
                                                             setClickupSelectedTags([]);
+                                                            setClickupTagSearch('');
                                                             setClickupResult(null);
                                                             setClickupTagsLoading(true);
                                                             fetchClickUpTags()
@@ -939,31 +941,66 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                         <Loader2 className="w-3 h-3 animate-spin" /> Memuat tags...
                                     </div>
                                 ) : clickupAvailableTags.length > 0 ? (
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {clickupAvailableTags.map((tag) => {
-                                            const selected = clickupSelectedTags.includes(tag.name);
-                                            return (
-                                                <button
-                                                    key={tag.name}
-                                                    type="button"
-                                                    onClick={() => setClickupSelectedTags(prev =>
-                                                        selected ? prev.filter(t => t !== tag.name) : [...prev, tag.name]
-                                                    )}
-                                                    className={`px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ${
-                                                        selected
-                                                            ? 'opacity-100 ring-1 ring-white/30 scale-105'
-                                                            : 'opacity-50 hover:opacity-80'
-                                                    }`}
-                                                    style={{
-                                                        backgroundColor: tag.tag_bg + '33',
-                                                        borderColor: tag.tag_bg + '88',
-                                                        color: tag.tag_fg,
-                                                    }}
-                                                >
-                                                    {tag.name}
-                                                </button>
-                                            );
-                                        })}
+                                    <div className="space-y-2">
+                                        {/* Search input */}
+                                        <input
+                                            type="text"
+                                            value={clickupTagSearch}
+                                            onChange={(e) => setClickupTagSearch(e.target.value)}
+                                            placeholder="Cari tag..."
+                                            className="w-full h-7 rounded-md border border-input bg-background px-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                                        />
+                                        {/* Selected tags */}
+                                        {clickupSelectedTags.length > 0 && (
+                                            <div className="flex flex-wrap gap-1.5 p-2 rounded-md bg-muted/30 border border-border">
+                                                {clickupSelectedTags.map((name) => {
+                                                    const tag = clickupAvailableTags.find(t => t.name === name);
+                                                    return (
+                                                        <button
+                                                            key={name}
+                                                            type="button"
+                                                            onClick={() => setClickupSelectedTags(prev => prev.filter(t => t !== name))}
+                                                            className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all ring-1 ring-white/20"
+                                                            style={{
+                                                                backgroundColor: (tag?.tag_bg ?? '#888') + '44',
+                                                                borderColor: (tag?.tag_bg ?? '#888') + '99',
+                                                                color: tag?.tag_fg ?? '#fff',
+                                                            }}
+                                                        >
+                                                            {name}
+                                                            <X className="w-2.5 h-2.5 opacity-70" />
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                        {/* Filtered available tags */}
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {clickupAvailableTags
+                                                .filter(tag =>
+                                                    !clickupSelectedTags.includes(tag.name) &&
+                                                    tag.name.toLowerCase().includes(clickupTagSearch.toLowerCase())
+                                                )
+                                                .map((tag) => (
+                                                    <button
+                                                        key={tag.name}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setClickupSelectedTags(prev => [...prev, tag.name]);
+                                                            setClickupTagSearch('');
+                                                        }}
+                                                        className="px-2 py-0.5 rounded-full text-[11px] font-medium border transition-all opacity-60 hover:opacity-100"
+                                                        style={{
+                                                            backgroundColor: tag.tag_bg + '33',
+                                                            borderColor: tag.tag_bg + '88',
+                                                            color: tag.tag_fg,
+                                                        }}
+                                                    >
+                                                        {tag.name}
+                                                    </button>
+                                                ))
+                                            }
+                                        </div>
                                     </div>
                                 ) : (
                                     <p className="text-[11px] text-muted-foreground">Belum ada tags di space ClickUp Anda.</p>
