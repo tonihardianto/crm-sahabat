@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { NotificationProvider } from '@/context/NotificationContext';
 import { AppSettingsProvider } from '@/context/AppSettingsContext';
@@ -16,6 +16,29 @@ import { ContactsPage } from '@/pages/ContactsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { AppSettingsPage } from '@/pages/AppSettingsPage';
+
+const PAGE_TITLES: Record<string, string> = {
+  '/': 'Dashboard',
+  '/tickets': 'Tiket Aktif',
+  '/archived': 'Arsip Tiket',
+  '/clients': 'Klien',
+  '/contacts': 'Kontak',
+  '/templates': 'Template',
+  '/settings': 'Pengaturan',
+  '/users': 'Pengguna',
+  '/login': 'Login',
+};
+
+const APP_NAME = 'AishaCRM';
+
+function DocumentTitle() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    const page = PAGE_TITLES[pathname];
+    document.title = page ? `${page} — ${APP_NAME}` : APP_NAME;
+  }, [pathname]);
+  return null;
+}
 
 function AppLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -53,6 +76,7 @@ export default function App() {
         <NotificationProvider>
         <AppSettingsProvider>
         <Toaster position="top-right" closeButton />
+        <DocumentTitle />
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
