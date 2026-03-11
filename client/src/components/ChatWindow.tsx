@@ -2,7 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { SendHorizonal, MessageCircle, StickyNote, User2, FileText, Clock, X, Music, Film, File, PanelRightOpen, CircleAlertIcon, Plus, ImageIcon, Smile, Download, HandGrab, ArrowLeftRight, UserCheck, Pencil, Archive, Trash2, Check, CheckCheck, CornerUpLeft, ExternalLink, Loader2 } from 'lucide-react';
 import { EmojiPicker, EmojiPickerSearch, EmojiPickerContent, EmojiPickerFooter } from '@/components/ui/emoji-picker';
 import type { Ticket, Message } from '@/lib/api';
-import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate, createClickUpTask, fetchClickUpTags } from '@/lib/api';
+import { sendMessage as apiSendMessage, sendMediaMessage as apiSendMedia, editMessage as apiEditMessage, sendTemplateToTicket as apiSendTemplate, createClickUpTask, fetchClickUpTags, fetchQuickReplies } from '@/lib/api';
+import type { QuickReply } from '@/lib/api';
 import { HandoverDialog } from '@/components/HandoverDialog';
 import { AssignDialog } from '@/components/AssignDialog';
 import { useAuth } from '@/context/AuthContext';
@@ -157,6 +158,8 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [clickupTagSearch, setClickupTagSearch] = useState('');
     const [clickupSubmitting, setClickupSubmitting] = useState(false);
     const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
+    const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
+    const [qrActiveIndex, setQrActiveIndex] = useState(0);
     const { user } = useAuth();
     const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
@@ -175,6 +178,21 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             .then(setTemplates)
             .catch(console.error);
     }, []);
+
+    useEffect(() => {
+        fetchQuickReplies().then(setQuickReplies).catch(console.error);
+    }, []);
+
+    const qrSearch = (inputText.startsWith('/') && !editingMsg) ? inputText.slice(1).toLowerCase() : null;
+    const filteredQR = qrSearch !== null
+        ? quickReplies.filter(qr => qr.shortcut.startsWith(qrSearch) || qr.title.toLowerCase().includes(qrSearch))
+        : [];
+    const showQRPopup = qrSearch !== null && filteredQR.length > 0;
+
+    const applyQR = (qr: QuickReply) => {
+        setInputText(qr.body);
+        setQrActiveIndex(0);
+    };
 
     const windowOpen = ticket ? is24hWindowOpen(ticket.messages) : false;
     const timeLeft = ticket ? getWindowTimeLeft(ticket.messages) : null;
@@ -244,6 +262,12 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (showQRPopup) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); setQrActiveIndex(i => Math.min(i + 1, filteredQR.length - 1)); return; }
+            if (e.key === 'ArrowUp') { e.preventDefault(); setQrActiveIndex(i => Math.max(i - 1, 0)); return; }
+            if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) { e.preventDefault(); applyQR(filteredQR[qrActiveIndex]); return; }
+            if (e.key === 'Escape') { setInputText(''); return; }
+        }
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             handleSend();
@@ -627,7 +651,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             </div>
 
             {/* Input Area */}
-            <div className="px-5 py-3 border-none border-border bg-background">
+            <div className="px-5 py-3 border-none border-border bg-background relative overflow-visible">
                 {/* Edit mode indicator */}
                 {editingMsg && (
                     <div className="mb-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
@@ -694,6 +718,31 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 )}
 
                 <InputGroup className={`rounded-xl ${isInternal ? 'border-amber-500/30 bg-amber-500/5' : ''}`}>
+                {/* Quick Reply Popup */}
+                {showQRPopup && (
+                    <div className="absolute bottom-full left-0 right-0 z-40 mb-2 bg-card border border-border rounded-xl shadow-2xl overflow-hidden">
+                        <div className="px-3 py-1.5 border-b border-border flex items-center gap-1.5">
+                            <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" className="text-yellow-400"><path d="M9.5 1L3 9h5l-1.5 6L14 7H9L9.5 1z"/></svg>
+                            <span className="text-[11px] text-muted-foreground font-medium">Quick Replies</span>
+                            <span className="text-[10px] text-muted-foreground ml-auto">↑↓ navigate · Tab / Enter to insert · Esc dismiss</span>
+                        </div>
+                        {filteredQR.slice(0, 6).map((qr, idx) => (
+                            <button
+                                key={qr.id}
+                                onMouseDown={(e) => { e.preventDefault(); applyQR(qr); }}
+                                className={`w-full text-left flex items-start gap-3 px-3 py-2.5 transition-colors ${
+                                    idx === qrActiveIndex ? 'bg-primary/10' : 'hover:bg-muted/50'
+                                }`}
+                            >
+                                <span className="shrink-0 text-[11px] font-mono font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md mt-0.5">/{qr.shortcut}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-xs font-medium text-foreground">{qr.title}</p>
+                                    <p className="text-[11px] text-muted-foreground truncate">{qr.body}</p>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                )}
                     <InputGroupAddon className="pl-1">
                         <input
                             ref={imageInputRef}
@@ -750,7 +799,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     </InputGroupAddon>
                     <InputGroupTextarea
                         value={inputText}
-                        onChange={(e) => setInputText(e.target.value)}
+                        onChange={(e) => { setInputText(e.target.value); setQrActiveIndex(0); }}
                         onKeyDown={handleKeyDown}
                         placeholder={attachedFile ? 'Tambah caption (opsional)...' : (!windowOpen && !isInternal ? 'Window tertutup — pilih Template atau Internal Note' : isInternal ? 'Write internal note...' : 'Type a message...')}
                         disabled={!windowOpen && !isInternal && !attachedFile}

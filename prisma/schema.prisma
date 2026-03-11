@@ -331,3 +331,18 @@ model WebhookLog {
   @@index([createdAt])
   @@map("webhook_logs")
 }
+
+// ============================================================
+// Quick Replies (Balasan cepat dengan shortcut /)
+// ============================================================
+
+model QuickReply {
+  id        String   @id @default(cuid())
+  shortcut  String   @unique // e.g. "greet", "close", "thanks"
+  title     String   // Nama tampilan
+  body      String   @db.Text // Isi pesan
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("quick_replies")
+}

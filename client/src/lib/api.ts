@@ -292,3 +292,51 @@ export async function sendTemplateToTicket(
     const data = await res.json();
     return data.message;
 }
+
+// ── Quick Replies ─────────────────────────────────────────────
+
+export interface QuickReply {
+    id: string;
+    shortcut: string;
+    title: string;
+    body: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export async function fetchQuickReplies(): Promise<QuickReply[]> {
+    const res = await apiFetch(`${API_BASE}/quick-replies`);
+    if (!res.ok) throw new Error('Failed to fetch quick replies');
+    return res.json();
+}
+
+export async function createQuickReply(data: { shortcut: string; title: string; body: string }): Promise<QuickReply> {
+    const res = await apiFetch(`${API_BASE}/quick-replies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { message?: string }).message || 'Failed to create quick reply');
+    }
+    return res.json();
+}
+
+export async function updateQuickReply(id: string, data: Partial<{ shortcut: string; title: string; body: string }>): Promise<QuickReply> {
+    const res = await apiFetch(`${API_BASE}/quick-replies/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { message?: string }).message || 'Failed to update quick reply');
+    }
+    return res.json();
+}
+
+export async function deleteQuickReply(id: string): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/quick-replies/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete quick reply');
+}

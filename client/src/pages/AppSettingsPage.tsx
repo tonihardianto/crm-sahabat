@@ -1,7 +1,8 @@
-import { useRef, useState } from 'react';
-import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Palette, Shield, Plug } from 'lucide-react';
+import { useRef, useState, useEffect } from 'react';
+import { PanelLeft, Monitor, MessageSquare, RotateCcw, Clock, StickyNote, KeyRound, Eye, EyeOff, ExternalLink, CheckCircle2, XCircle, Loader2, Palette, Shield, Plug, Zap, Plus, Trash2, Pencil, Check, X } from 'lucide-react';
 import { useAppSettings } from '@/context/AppSettingsContext';
-import { verifyClickUpToken } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { verifyClickUpToken, fetchQuickReplies, createQuickReply, updateQuickReply, deleteQuickReply, type QuickReply } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -362,14 +363,207 @@ function ChangePasswordForm() {
     );
 }
 
+// ── Quick Replies Manager ──────────────────────────────────────────────────
+
+function QuickRepliesManager() {
+    const { user } = useAuth();
+    const isAdmin = user?.role === 'ADMIN';
+    const [items, setItems] = useState<QuickReply[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ shortcut: '', title: '', body: '' });
+    const [showNew, setShowNew] = useState(false);
+    const [newForm, setNewForm] = useState({ shortcut: '', title: '', body: '' });
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        fetchQuickReplies()
+            .then(setItems)
+            .catch(() => setError('Gagal memuat quick replies'))
+            .finally(() => setLoading(false));
+    }, []);
+
+    const handleCreate = async () => {
+        if (!newForm.shortcut.trim() || !newForm.title.trim() || !newForm.body.trim()) return;
+        setSaving(true); setError(null);
+        try {
+            const created = await createQuickReply(newForm);
+            setItems((p) => [...p, created].sort((a, b) => a.shortcut.localeCompare(b.shortcut)));
+            setNewForm({ shortcut: '', title: '', body: '' });
+            setShowNew(false);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Gagal membuat');
+        } finally { setSaving(false); }
+    };
+
+    const startEdit = (item: QuickReply) => {
+        setEditingId(item.id);
+        setEditForm({ shortcut: item.shortcut, title: item.title, body: item.body });
+        setError(null);
+    };
+
+    const handleUpdate = async (id: string) => {
+        setSaving(true); setError(null);
+        try {
+            const updated = await updateQuickReply(id, editForm);
+            setItems((p) => p.map((i) => (i.id === id ? updated : i)).sort((a, b) => a.shortcut.localeCompare(b.shortcut)));
+            setEditingId(null);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Gagal mengupdate');
+        } finally { setSaving(false); }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Hapus quick reply ini?')) return;
+        try {
+            await deleteQuickReply(id);
+            setItems((p) => p.filter((i) => i.id !== id));
+        } catch {
+            setError('Gagal menghapus');
+        }
+    };
+
+    if (loading) return <p className="text-xs text-muted-foreground">Memuat…</p>;
+
+    return (
+        <div className="space-y-3">
+            {error && <p className="text-xs text-red-400">{error}</p>}
+
+            {/* List */}
+            <div className="rounded-xl border border-border bg-card overflow-hidden">
+                {items.length === 0 && !showNew && (
+                    <p className="text-xs text-muted-foreground italic p-4">Belum ada quick reply. {isAdmin && 'Klik "Tambah" untuk membuat.'}</p>
+                )}
+                {items.map((item) => (
+                    <div key={item.id} className="border-b border-border last:border-0">
+                        {editingId === item.id ? (
+                            <div className="p-3 space-y-2">
+                                <div className="flex gap-2">
+                                    <div className="w-32 shrink-0">
+                                        <label className="text-[10px] text-muted-foreground mb-1 block">Shortcut</label>
+                                        <Input
+                                            value={editForm.shortcut}
+                                            onChange={(e) => setEditForm({ ...editForm, shortcut: e.target.value })}
+                                            placeholder="greet"
+                                            className="h-7 text-xs font-mono"
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-[10px] text-muted-foreground mb-1 block">Judul</label>
+                                        <Input
+                                            value={editForm.title}
+                                            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                                            placeholder="Salam Pembuka"
+                                            className="h-7 text-xs"
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] text-muted-foreground mb-1 block">Isi Pesan</label>
+                                    <textarea
+                                        value={editForm.body}
+                                        onChange={(e) => setEditForm({ ...editForm, body: e.target.value })}
+                                        placeholder="Halo, selamat datang…"
+                                        rows={3}
+                                        className="w-full text-xs px-3 py-2 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                                    />
+                                </div>
+                                <div className="flex justify-end gap-2">
+                                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)} className="h-7 text-xs">
+                                        <X className="w-3 h-3 mr-1" /> Batal
+                                    </Button>
+                                    <Button size="sm" onClick={() => handleUpdate(item.id)} disabled={saving} className="h-7 text-xs">
+                                        <Check className="w-3 h-3 mr-1" /> Simpan
+                                    </Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-start gap-3 px-4 py-3">
+                                <span className="shrink-0 text-[11px] font-mono font-semibold text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-md mt-0.5">/{item.shortcut}</span>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground truncate">{item.title}</p>
+                                    <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{item.body}</p>
+                                </div>
+                                {isAdmin && (
+                                    <div className="flex gap-1 shrink-0">
+                                        <button onClick={() => startEdit(item)} className="p-1.5 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                                            <Pencil className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button onClick={() => handleDelete(item.id)} className="p-1.5 rounded-md hover:bg-red-500/10 transition-colors text-muted-foreground hover:text-red-400">
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {/* Inline new form */}
+                {showNew && (
+                    <div className="p-3 space-y-2 border-t border-border">
+                        <div className="flex gap-2">
+                            <div className="w-32 shrink-0">
+                                <label className="text-[10px] text-muted-foreground mb-1 block">Shortcut</label>
+                                <Input
+                                    value={newForm.shortcut}
+                                    onChange={(e) => setNewForm({ ...newForm, shortcut: e.target.value })}
+                                    placeholder="greet"
+                                    className="h-7 text-xs font-mono"
+                                    autoFocus
+                                />
+                            </div>
+                            <div className="flex-1">
+                                <label className="text-[10px] text-muted-foreground mb-1 block">Judul</label>
+                                <Input
+                                    value={newForm.title}
+                                    onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
+                                    placeholder="Salam Pembuka"
+                                    className="h-7 text-xs"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="text-[10px] text-muted-foreground mb-1 block">Isi Pesan</label>
+                            <textarea
+                                value={newForm.body}
+                                onChange={(e) => setNewForm({ ...newForm, body: e.target.value })}
+                                placeholder="Halo, terima kasih telah menghubungi kami…"
+                                rows={3}
+                                className="w-full text-xs px-3 py-2 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                            />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button size="sm" variant="ghost" onClick={() => { setShowNew(false); setNewForm({ shortcut: '', title: '', body: '' }); }} className="h-7 text-xs">
+                                <X className="w-3 h-3 mr-1" /> Batal
+                            </Button>
+                            <Button size="sm" onClick={handleCreate} disabled={saving || !newForm.shortcut.trim() || !newForm.title.trim() || !newForm.body.trim()} className="h-7 text-xs">
+                                <Check className="w-3 h-3 mr-1" /> Tambah
+                            </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {isAdmin && !showNew && (
+                <Button size="sm" variant="outline" onClick={() => setShowNew(true)} className="gap-1.5">
+                    <Plus className="w-3.5 h-3.5" /> Tambah Quick Reply
+                </Button>
+            )}
+        </div>
+    );
+}
+
 // ── Tab types ─────────────────────────────────────────────────
 
-type Tab = 'appearance' | 'security' | 'integration';
+type Tab = 'appearance' | 'security' | 'integration' | 'quick-replies';
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'appearance', label: 'Appearance', icon: <Palette className="w-4 h-4 text-violet-400" /> },
     { id: 'security', label: 'Security', icon: <Shield className="w-4 h-4 text-emerald-400" /> },
     { id: 'integration', label: 'Integration', icon: <Plug className="w-4 h-4 text-orange-400" /> },
+    { id: 'quick-replies', label: 'Quick Replies', icon: <Zap className="w-4 h-4 text-yellow-400" /> },
 ];
 
 // ── Main page ─────────────────────────────────────────────────
@@ -538,6 +732,22 @@ export function AppSettingsPage() {
                                     Konfigurasi token dan List ID ClickUp milik Anda. Internal note dapat dikonversi menjadi task ClickUp.
                                 </p>
                                 <ClickUpSettingsSection />
+                            </section>
+                        </div>
+                    )}
+
+                    {/* ── Quick Replies tab ── */}
+                    {activeTab === 'quick-replies' && (
+                        <div className="space-y-8">
+                            <section className="space-y-3">
+                                <div className="flex items-center gap-2 pb-2 border-b border-border">
+                                    <Zap className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Quick Replies</h2>
+                                </div>
+                                <p className="text-xs text-muted-foreground -mt-1">
+                                    Ketik <span className="font-mono font-semibold text-foreground">/</span> diikuti shortcut di kolom chat untuk menyisipkan balasan cepat. Contoh: <span className="font-mono text-primary">/greet</span>
+                                </p>
+                                <QuickRepliesManager />
                             </section>
                         </div>
                     )}

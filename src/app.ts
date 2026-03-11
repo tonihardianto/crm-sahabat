@@ -13,6 +13,7 @@ import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import settingsRoutes from "./routes/settings.routes";
 import clickupRoutes from "./routes/clickup.routes";
+import quickReplyRoutes from "./routes/quick-reply.routes";
 import { requireAuth } from "./middlewares/auth.middleware";
 
 const app = express();
@@ -46,6 +47,7 @@ app.use("/api/templates", requireAuth, templateRoutes);
 app.use("/api/users", userRoutes); // has requireAdmin internally
 app.use("/api/settings", requireAuth, settingsRoutes);
 app.use("/api/clickup", clickupRoutes);
+app.use("/api/quick-replies", requireAuth, quickReplyRoutes);
 
 // ---- Health Check ----
 app.get("/health", (_req, res) => {
