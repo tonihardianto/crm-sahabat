@@ -60,6 +60,14 @@ function playNotificationSound() {
     }
 }
 
+/** Convert a base64url VAPID public key to the Uint8Array that PushManager.subscribe() requires */
+function urlBase64ToUint8Array(base64url: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64url.length % 4)) % 4);
+    const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+}
+
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
     const { user } = useAuth();
     const [unreadCount, setUnreadCount] = useState(0);
@@ -90,9 +98,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         if (!reg) return;
         try {
             const vapidKey = await getVapidPublicKey();
+            // PushManager.subscribe requires a Uint8Array, not a raw base64url string
+            const appServerKey = urlBase64ToUint8Array(vapidKey);
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
-                applicationServerKey: vapidKey,
+                applicationServerKey: appServerKey,
             });
             await savePushSubscription(sub.toJSON());
             setPushEnabled(true);
