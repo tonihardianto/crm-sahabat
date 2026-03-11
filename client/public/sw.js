@@ -1,4 +1,15 @@
 // AishaCRM Service Worker — Web Push handler
+
+// Activate immediately — don't wait for existing tabs to close
+self.addEventListener('install', (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+// Take control of all open clients immediately after activation
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   let data = { title: 'AishaCRM', body: 'Ada notifikasi baru', icon: '/favicon.ico', tag: 'crm', url: '/' };
   try {

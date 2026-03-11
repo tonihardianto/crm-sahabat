@@ -101,10 +101,16 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const subscribePush = useCallback(async () => {
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         try {
-            // .ready guarantees an active (not just registered) service worker
             const reg = await navigator.serviceWorker.ready;
             swRegRef.current = reg;
+
+            // Clear any stale subscription first to avoid FCM conflicts
+            const existing = await reg.pushManager.getSubscription();
+            if (existing) await existing.unsubscribe();
+
             const vapidKey = await getVapidPublicKey();
+            if (!vapidKey) throw new Error('VAPID public key not available');
+
             const appServerKey = urlBase64ToUint8Array(vapidKey);
             const sub = await reg.pushManager.subscribe({
                 userVisibleOnly: true,
@@ -114,6 +120,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             setPushEnabled(true);
         } catch (err) {
             console.error('[Push] Subscribe error:', err);
+            throw err;
         }
     }, []);
 
