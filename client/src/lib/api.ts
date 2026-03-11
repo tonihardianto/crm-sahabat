@@ -26,6 +26,7 @@ export interface Ticket {
     clickupTaskId: string | null;
     clickupTaskUrl: string | null;
     clickupStatus: string | null;
+    clickupTags: string | null;
 }
 
 export interface Contact {

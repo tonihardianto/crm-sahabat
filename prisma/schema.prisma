@@ -134,6 +134,7 @@ model Ticket {
   clickupTaskId   String?        @map("clickup_task_id")
   clickupTaskUrl  String?        @map("clickup_task_url")
   clickupStatus   String?        @map("clickup_status")
+  clickupTags     String?        @map("clickup_tags")
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 

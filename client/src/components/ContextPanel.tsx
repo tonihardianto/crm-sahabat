@@ -162,6 +162,26 @@ export function ContextPanel({ ticket, onTicketUpdated, onClose }: ContextPanelP
                                     {ticket.clickupStatus ?? 'BACKLOG'}
                                 </span>
                             </div>
+                            {ticket.clickupTags && (() => {
+                                try {
+                                    const tags: string[] = JSON.parse(ticket.clickupTags);
+                                    if (tags.length === 0) return null;
+                                    return (
+                                        <div className="flex flex-col gap-1">
+                                            <span className="text-xs text-muted-foreground">Tags</span>
+                                            <div className="flex flex-wrap gap-1">
+                                                {tags.map((tag) => (
+                                                    <span key={tag} className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-purple-400">
+                                                        {tag}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                } catch {
+                                    return null;
+                                }
+                            })()}
                             {ticket.clickupTaskUrl && (
                                 <a
                                     href={ticket.clickupTaskUrl}

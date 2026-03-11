@@ -54,7 +54,7 @@ export async function createTaskHandler(req: AuthRequest, res: Response): Promis
         );
 
         // Link task to ticket
-        await clickupService.linkTaskToTicket(ticket.id, task.id, task.url, task.status.status);
+        await clickupService.linkTaskToTicket(ticket.id, task.id, task.url, task.status.status, tags);
 
         // Create system note in ticket
         const note = await prisma.message.create({

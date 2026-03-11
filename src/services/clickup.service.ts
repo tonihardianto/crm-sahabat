@@ -139,7 +139,8 @@ export async function linkTaskToTicket(
     ticketId: string,
     taskId: string,
     taskUrl: string,
-    taskStatus: string
+    taskStatus: string,
+    tags?: string[]
 ) {
     return prisma.ticket.update({
         where: { id: ticketId },
@@ -147,6 +148,7 @@ export async function linkTaskToTicket(
             clickupTaskId: taskId,
             clickupTaskUrl: taskUrl,
             clickupStatus: taskStatus,
+            clickupTags: tags && tags.length > 0 ? JSON.stringify(tags) : null,
         },
     });
 }
