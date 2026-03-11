@@ -1,11 +1,15 @@
 import webpush from "web-push";
 import crypto from "crypto";
 
-webpush.setVapidDetails(
-    process.env.VAPID_MAILTO || "mailto:admin@sahabatmedia.co.id",
-    process.env.VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        process.env.VAPID_MAILTO || "mailto:admin@sahabatmedia.co.id",
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+} else {
+    console.warn("[webpush] VAPID keys not set — push notifications disabled");
+}
 
 export { webpush };
 
