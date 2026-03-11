@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { fetchAppSettings, saveAppSettings } from '@/lib/api';
 import type { AppSettings } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface AppSettingsContextType {
     settings: AppSettings;
@@ -49,15 +50,17 @@ const AppSettingsContext = createContext<AppSettingsContextType>({
 });
 
 export function AppSettingsProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useAuth();
     const [settings, setSettings] = useState<AppSettings>(defaults);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!user) { setLoading(false); return; }
         fetchAppSettings()
             .then(setSettings)
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, []);
+    }, [user]);
 
     const updateSettings = useCallback(async (patch: Partial<AppSettings>) => {
         const optimistic = { ...settings, ...patch };

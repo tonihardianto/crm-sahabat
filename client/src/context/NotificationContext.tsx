@@ -84,6 +84,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     // ── Service Worker registration ───────────────────────────
     useEffect(() => {
+        if (!user) return; // don't touch SW / DB before login
         if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
         navigator.serviceWorker.register('/sw.js', { scope: '/' })
             .catch((err) => console.warn('[SW] Registration failed:', err));
@@ -103,7 +104,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
                 }
             })
             .catch((err) => console.warn('[SW] Ready failed:', err));
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [user]); // re-run when user logs in
 
     // ── Subscribe helper ──────────────────────────────────────
     const subscribePush = useCallback(async () => {
