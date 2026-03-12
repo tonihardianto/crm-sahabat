@@ -42,9 +42,24 @@ const NotificationContext = createContext<NotificationContextValue>({
     togglePush: async () => {},
 });
 
+// Shared AudioContext — created lazily on first user gesture
+let _audioCtx: AudioContext | null = null;
+function getAudioContext(): AudioContext | null {
+    if (typeof AudioContext === 'undefined') return null;
+    if (!_audioCtx) _audioCtx = new AudioContext();
+    return _audioCtx;
+}
+// Resume the shared context on any user interaction so it's ready for notifications
+if (typeof document !== 'undefined') {
+    const resume = () => { getAudioContext()?.resume(); };
+    document.addEventListener('click', resume, { once: false, passive: true });
+    document.addEventListener('keydown', resume, { once: false, passive: true });
+}
+
 function playNotificationSound() {
     try {
-        const ctx = new AudioContext();
+        const ctx = getAudioContext();
+        if (!ctx || ctx.state === 'suspended') return;
         const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
         oscillator.connect(gain);
@@ -57,7 +72,7 @@ function playNotificationSound() {
         oscillator.start(ctx.currentTime);
         oscillator.stop(ctx.currentTime + 0.35);
     } catch {
-        // AudioContext blocked (e.g. no user interaction yet) — ignore
+        // ignore
     }
 }
 
