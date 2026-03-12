@@ -181,15 +181,15 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                                 autoFocus
                             />
                         </div>
-                        <ScrollArea className="flex-1 max-h-[360px]">
-                            <div className="space-y-1 pr-2">
+                        <ScrollArea className="flex-1 overflow-y-auto">
+                            <div className="space-y-1 pr-2 ">
                                 {filteredContacts.length === 0 ? (
                                     <p className="text-sm text-muted-foreground text-center py-6">Kontak tidak ditemukan</p>
                                 ) : filteredContacts.map(c => (
                                     <button
                                         key={c.id}
                                         onClick={() => handleSelectContact(c)}
-                                        className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-accent transition-colors flex items-start gap-3"
+                                        className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-accent transition-colors flex items-start gap-3 cursor-pointer"
                                     >
                                         <div className="w-8 h-8 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-xs font-bold text-blue-400 shrink-0 mt-0.5">
                                             {c.name.slice(0, 2).toUpperCase()}
@@ -228,7 +228,7 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                                     <span className="text-sm font-medium">{selectedContact.name}</span>
                                     <span className="text-xs text-muted-foreground ml-2">{selectedContact.client.name}</span>
                                 </div>
-                                <button onClick={() => setStep(1)} className="text-xs text-blue-400 hover:underline shrink-0">
+                                <button onClick={() => setStep(1)} className="text-xs text-blue-400 hover:underline shrink-0 cursor-pointer">
                                     Ganti
                                 </button>
                             </div>
@@ -246,7 +246,7 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                                             <button
                                                 key={t.id}
                                                 onClick={() => handleSelectTemplate(t)}
-                                                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all ${selectedTemplate?.id === t.id
+                                                className={`w-full text-left px-3 py-2.5 rounded-lg border transition-all cursor-pointer ${selectedTemplate?.id === t.id
                                                     ? 'border-blue-500/50 bg-blue-500/10'
                                                     : 'border-border hover:bg-accent'
                                                     }`}
@@ -328,12 +328,12 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                 )}
 
                 <DialogFooter className="shrink-0">
-                    <Button variant="ghost" onClick={onClose}>Batal</Button>
+                    <Button className='cursor-pointer' variant="ghost" onClick={onClose}>Batal</Button>
                     {step === 2 && (
                         <Button
                             onClick={handleSend}
                             disabled={!selectedContact || !selectedTemplate || sending}
-                            className="gap-2 bg-primary text-white hover:bg-primary/90 disabled:bg-primary/50 disabled:text-white/70"
+                            className="gap-2 bg-primary text-white hover:bg-primary/90 disabled:bg-primary/50 disabled:text-white/70 cursor-pointer"
                         >
                             {sending
                                 ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Mengirim...</>

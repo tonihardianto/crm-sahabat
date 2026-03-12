@@ -585,7 +585,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 </div>
                                                 <button
                                                     onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                    className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-accent"
+                                                    className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity w-6 h-6 rounded-full bg-muted border border-border flex items-center justify-center hover:bg-accent cursor-pointer"
                                                     title="Balas pesan"
                                                 >
                                                     <CornerUpLeft className="w-3 h-3 text-muted-foreground" />
@@ -624,7 +624,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <div className="absolute -top-2 -left-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
                                                     <button
                                                         onClick={() => { setReplyingTo(msg); setEditingMsg(null); }}
-                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center hover:bg-blue-500/40"
+                                                        className="w-6 h-6 rounded-full bg-blue-500/20 border border-blue-500/50 flex items-center justify-center hover:bg-blue-500/40 cursor-pointer"
                                                         title="Balas pesan"
                                                     >
                                                         <CornerUpLeft className="w-3 h-3 text-blue-300" />
@@ -763,7 +763,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                 <InputGroupButton
                                     size="icon-sm"
                                     variant="ghost"
-                                    className="text-muted-foreground hover:bg-primary/10"
+                                    className="text-muted-foreground hover:bg-primary/10 cursor-pointer"
                                 >
                                     <Plus className="size-4" />
                                 </InputGroupButton>
@@ -771,23 +771,23 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             <DropdownMenuContent side="top" align="start" sideOffset={12} className="w-42 bg-card">
                                 {windowOpen && (
                                     <>
-                                        <DropdownMenuItem className='text-xs' onClick={() => imageInputRef.current?.click()}>
+                                        <DropdownMenuItem className='text-xs cursor-pointer' onClick={() => imageInputRef.current?.click()}>
                                             <ImageIcon className="size-3.5 text-blue-400" />
                                             <span>Gambar / Video</span>
                                         </DropdownMenuItem>
-                                        <DropdownMenuItem className='text-xs' onClick={() => docInputRef.current?.click()}>
+                                        <DropdownMenuItem className='text-xs cursor-pointer' onClick={() => docInputRef.current?.click()}>
                                             <File className="size-3.5 text-emerald-400" />
                                             <span>Dokumen</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                     </>
                                 )}
-                                <DropdownMenuItem className='text-xs' onClick={() => { setShowTemplatePicker(p => !p); setIsInternal(false); }}>
+                                <DropdownMenuItem className='text-xs cursor-pointer' onClick={() => { setShowTemplatePicker(p => !p); setIsInternal(false); }}>
                                     <FileText className="size-3.5 text-violet-400" />
                                     <span>Templates</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem className='text-xs' onClick={() => { setIsInternal(p => !p); setShowTemplatePicker(false); clearAttachment(); }}>
+                                <DropdownMenuItem className='text-xs cursor-pointer' onClick={() => { setIsInternal(p => !p); setShowTemplatePicker(false); clearAttachment(); }}>
                                     <StickyNote className="size-3.5 text-amber-400" />
                                     <span>{isInternal ? 'Batalkan Internal Note' : 'Internal Note'}</span>
                                 </DropdownMenuItem>
@@ -811,7 +811,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             <div ref={emojiPickerRef} className="absolute bottom-10 right-0 z-50 rounded-xl border border-border shadow-lg overflow-hidden">
                                 <EmojiPicker className="h-[340px] w-[266px]" onEmojiSelect={({ emoji }) => { handleEmojiClick(emoji); setShowEmojiPicker(false); }}>
                                     <EmojiPickerSearch />
-                                    <EmojiPickerContent />
+                                    <EmojiPickerContent className='cursor-pointer' />
                                     <EmojiPickerFooter />
                                 </EmojiPicker>
                             </div>
@@ -820,7 +820,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             size="icon-sm"
                             variant="ghost"
                             onClick={() => setShowEmojiPicker(p => !p)}
-                            className="text-muted-foreground hover:bg-primary/10"
+                            className="text-muted-foreground hover:bg-primary/10 cursor-pointer"
                             title="Emoji"
                         >
                             <Smile className="w-4 h-4" />
@@ -830,7 +830,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             variant={((inputText.trim() || attachedFile) && (windowOpen || isInternal)) ? 'default' : 'ghost'}
                             onClick={handleSend}
                             disabled={(!inputText.trim() && !attachedFile) || sending || (!windowOpen && !isInternal && !attachedFile)}
-                            className={isInternal && inputText.trim() ? 'bg-amber-500 hover:bg-amber-400 mr-2' : 'mr-2'}
+                            className={isInternal && inputText.trim() ? 'bg-amber-500 hover:bg-amber-400 mr-2 cursor-pointer' : 'mr-2 cursor-pointer'}
                         >
                             <SendHorizonal className="w-10 h-10" />
                         </InputGroupButton>

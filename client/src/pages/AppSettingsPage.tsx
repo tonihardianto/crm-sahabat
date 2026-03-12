@@ -430,6 +430,57 @@ function QuickRepliesManager() {
         <div className="space-y-3">
             {error && <p className="text-xs text-red-400">{error}</p>}
 
+            {isAdmin && !showNew && (
+                <Button size="sm" variant="outline" onClick={() => setShowNew(true)} className="gap-1.5">
+                    <Plus className="w-3.5 h-3.5" /> Tambah Quick Reply
+                </Button>
+            )}
+
+            {/* Inline new form */}
+            {showNew && (
+                <div className="rounded-xl border border-border bg-card p-3 space-y-2">
+                    <div className="flex gap-2">
+                        <div className="w-32 shrink-0">
+                            <label className="text-[10px] text-muted-foreground mb-1 block">Shortcut</label>
+                            <Input
+                                value={newForm.shortcut}
+                                onChange={(e) => setNewForm({ ...newForm, shortcut: e.target.value })}
+                                placeholder="greet"
+                                className="h-7 text-xs font-mono"
+                                autoFocus
+                            />
+                        </div>
+                        <div className="flex-1">
+                            <label className="text-[10px] text-muted-foreground mb-1 block">Judul</label>
+                            <Input
+                                value={newForm.title}
+                                onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
+                                placeholder="Salam Pembuka"
+                                className="h-7 text-xs"
+                            />
+                        </div>
+                    </div>
+                    <div>
+                        <label className="text-[10px] text-muted-foreground mb-1 block">Isi Pesan</label>
+                        <textarea
+                            value={newForm.body}
+                            onChange={(e) => setNewForm({ ...newForm, body: e.target.value })}
+                            placeholder="Halo, terima kasih telah menghubungi kami…"
+                            rows={3}
+                            className="w-full text-xs px-3 py-2 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-1 focus:ring-primary"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => { setShowNew(false); setNewForm({ shortcut: '', title: '', body: '' }); }} className="h-7 text-xs">
+                            <X className="w-3 h-3 mr-1" /> Batal
+                        </Button>
+                        <Button size="sm" onClick={handleCreate} disabled={saving || !newForm.shortcut.trim() || !newForm.title.trim() || !newForm.body.trim()} className="h-7 text-xs">
+                            <Check className="w-3 h-3 mr-1" /> Tambah
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* List */}
             <div className="rounded-xl border border-border bg-card overflow-hidden">
                 {items.length === 0 && !showNew && (
@@ -500,57 +551,8 @@ function QuickRepliesManager() {
                     </div>
                 ))}
 
-                {/* Inline new form */}
-                {showNew && (
-                    <div className="p-3 space-y-2 border-t border-border">
-                        <div className="flex gap-2">
-                            <div className="w-32 shrink-0">
-                                <label className="text-[10px] text-muted-foreground mb-1 block">Shortcut</label>
-                                <Input
-                                    value={newForm.shortcut}
-                                    onChange={(e) => setNewForm({ ...newForm, shortcut: e.target.value })}
-                                    placeholder="greet"
-                                    className="h-7 text-xs font-mono"
-                                    autoFocus
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-[10px] text-muted-foreground mb-1 block">Judul</label>
-                                <Input
-                                    value={newForm.title}
-                                    onChange={(e) => setNewForm({ ...newForm, title: e.target.value })}
-                                    placeholder="Salam Pembuka"
-                                    className="h-7 text-xs"
-                                />
-                            </div>
-                        </div>
-                        <div>
-                            <label className="text-[10px] text-muted-foreground mb-1 block">Isi Pesan</label>
-                            <textarea
-                                value={newForm.body}
-                                onChange={(e) => setNewForm({ ...newForm, body: e.target.value })}
-                                placeholder="Halo, terima kasih telah menghubungi kami…"
-                                rows={3}
-                                className="w-full text-xs px-3 py-2 rounded-md border border-border bg-background resize-none focus:outline-none focus:ring-1 focus:ring-primary"
-                            />
-                        </div>
-                        <div className="flex justify-end gap-2">
-                            <Button size="sm" variant="ghost" onClick={() => { setShowNew(false); setNewForm({ shortcut: '', title: '', body: '' }); }} className="h-7 text-xs">
-                                <X className="w-3 h-3 mr-1" /> Batal
-                            </Button>
-                            <Button size="sm" onClick={handleCreate} disabled={saving || !newForm.shortcut.trim() || !newForm.title.trim() || !newForm.body.trim()} className="h-7 text-xs">
-                                <Check className="w-3 h-3 mr-1" /> Tambah
-                            </Button>
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {isAdmin && !showNew && (
-                <Button size="sm" variant="outline" onClick={() => setShowNew(true)} className="gap-1.5">
-                    <Plus className="w-3.5 h-3.5" /> Tambah Quick Reply
-                </Button>
-            )}
         </div>
     );
 }

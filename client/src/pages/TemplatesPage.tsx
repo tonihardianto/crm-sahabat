@@ -148,11 +148,11 @@ export function TemplatesPage() {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                            <Button onClick={handleSync} disabled={syncing} variant="outline" className="gap-2">
+                            <Button onClick={handleSync} disabled={syncing} variant="outline" className="gap-2 cursor-pointer">
                                 <RefreshCw className={`w-4 h-4 ${syncing ? 'animate-spin' : ''}`} />
                                 {syncing ? 'Syncing...' : 'Sync dari Meta'}
                             </Button>
-                            <Button onClick={openCreate} className="gap-2 bg-violet-600 hover:bg-violet-500">
+                            <Button onClick={openCreate} className="gap-2 bg-primary/80 hover:bg-primary/90 cursor-pointer">
                                 <Plus className="w-4 h-4" /> Tambah Template
                             </Button>
                         </div>
