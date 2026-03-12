@@ -217,7 +217,7 @@ export function TicketsPage() {
             </div>
 
             {/* ChatWindow + ContextPanel: full width on mobile when in chat view */}
-            <div className={`${isMobile ? (mobileView === 'chat' ? 'flex w-full' : 'hidden') : 'flex flex-1'} overflow-hidden`}>
+            <div className={`${isMobile ? (mobileView === 'chat' ? 'flex w-full' : 'hidden') : 'flex flex-1'} overflow-hidden mb-2`}>
                 <ChatWindow
                     ticket={activeTicket}
                     onClaimTicket={handleClaimTicket}

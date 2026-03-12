@@ -79,7 +79,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
     });
 
     return (
-        <aside className="w-[320px] min-w-[280px] flex flex-col border-none border-border bg-background">
+        <aside className="w-[320px] min-w-[280px] flex flex-col border-none border-border bg-background overflow-y-auto">
             {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-border">
                 <div className="flex items-center justify-between mb-3">
@@ -114,7 +114,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
             <StatsBar tickets={tickets} />
 
             {/* Ticket List */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-y-auto">
                 {filtered.length === 0 ? (
                     <div className="p-6 text-center text-muted-foreground text-sm">
                         {search ? 'Tidak ada hasil' : 'Belum ada tiket aktif'}
