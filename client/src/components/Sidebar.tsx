@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive, Settings } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useAppSettings } from '@/context/AppSettingsContext';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 const generalNavItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -12,6 +13,7 @@ const generalNavItems = [
     { to: '/clients', icon: Building2, label: 'Clients' },
     { to: '/contacts', icon: Users, label: 'Contacts' },
     { to: '/templates', icon: FileText, label: 'Templates' },
+    { to: '/settings', icon: Settings, label: 'Pengaturan' },
 ];
 
 function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {
@@ -23,29 +25,36 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                 {!collapsed && <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">General</h3>}
                 <nav className="space-y-0.5">
                     {generalNavItems.map(({ to, icon: Icon, label }) => (
-                        <NavLink
-                            key={to}
-                            to={to}
-                            end={to === '/'}
-                            onClick={onNavigate}
-                            title={collapsed ? label : undefined}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                                } ${collapsed ? 'justify-center' : ''}`
-                            }
-                        >
-                            <div className="relative shrink-0">
-                                <Icon className="w-4 h-4" />
-                                {to === '/tickets' && unreadCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold px-0.5 leading-none">
-                                        {unreadCount > 99 ? '99+' : unreadCount}
-                                    </span>
-                                )}
-                            </div>
-                            {!collapsed && label}
-                        </NavLink>
+                        <Tooltip key={to} delayDuration={0}>
+                            <TooltipTrigger asChild>
+                                <NavLink
+                                    to={to}
+                                    end={to === '/'}
+                                    onClick={onNavigate}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                        } ${collapsed ? 'justify-center' : ''}`
+                                    }
+                                >
+                                    <div className="relative shrink-0">
+                                        <Icon className="w-4 h-4" />
+                                        {to === '/tickets' && unreadCount > 0 && (
+                                            <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold px-0.5 leading-none">
+                                                {unreadCount > 99 ? '99+' : unreadCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {!collapsed && label}
+                                </NavLink>
+                            </TooltipTrigger>
+                            {collapsed && (
+                                <TooltipContent side="right" className="font-medium">
+                                    {label}
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
                     ))}
                 </nav>
             </div>
@@ -54,20 +63,28 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                 <div>
                     {!collapsed && <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Admin</h3>}
                     <nav className="space-y-0.5">
-                        <NavLink
-                            to="/users"
-                            onClick={onNavigate}
-                            title={collapsed ? 'User Management' : undefined}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400'
-                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-                                } ${collapsed ? 'justify-center' : ''}`
-                            }
-                        >
-                            <Shield className="w-4 h-4 shrink-0" />
-                            {!collapsed && 'User Management'}
-                        </NavLink>
+                        <Tooltip delayDuration={0}>
+                            <TooltipTrigger asChild>
+                                <NavLink
+                                    to="/users"
+                                    onClick={onNavigate}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                            ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400'
+                                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                        } ${collapsed ? 'justify-center' : ''}`
+                                    }
+                                >
+                                    <Shield className="w-4 h-4 shrink-0" />
+                                    {!collapsed && 'User Management'}
+                                </NavLink>
+                            </TooltipTrigger>
+                            {collapsed && (
+                                <TooltipContent side="right" className="font-medium">
+                                    User Management
+                                </TooltipContent>
+                            )}
+                        </Tooltip>
                     </nav>
                 </div>
             )}
