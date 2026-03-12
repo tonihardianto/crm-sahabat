@@ -44,7 +44,7 @@ function AppLayout() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
+    <div className="flex flex-col bg-background overflow-hidden" style={{ height: '100dvh' }}>
       <Topbar onMenuClick={() => setMobileSidebarOpen(true)} />
       <div className="flex-1 flex overflow-hidden">
         <Sidebar mobileOpen={mobileSidebarOpen} onMobileClose={() => setMobileSidebarOpen(false)} />
