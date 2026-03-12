@@ -266,7 +266,7 @@ export async function deleteTicket(ticketId: string): Promise<void> {
 
 export async function bulkTicketAction(
     ticketIds: string[],
-    action: 'archive' | 'resolve' | 'assign',
+    action: 'archive' | 'resolve' | 'assign' | 'delete',
     agentId?: string
 ): Promise<{ success: boolean; affected: number }> {
     const res = await apiFetch(`${API_BASE}/tickets/bulk`, {

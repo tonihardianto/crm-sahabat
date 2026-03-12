@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { TicketList } from '@/components/TicketList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ContextPanel } from '@/components/ContextPanel';
-import { fetchArchivedTickets, fetchTicketById, restoreTicket as apiRestoreTicket, deleteTicket as apiDeleteTicket } from '@/lib/api';
+import { fetchArchivedTickets, fetchTicketById, restoreTicket as apiRestoreTicket, deleteTicket as apiDeleteTicket, bulkTicketAction } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -16,6 +16,7 @@ export function ArchivePage() {
     const [mobileView, setMobileView] = useState<'list' | 'chat'>('list');
     const [showContextPanel, setShowContextPanel] = useState(true);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+    const [bulkDeleteIds, setBulkDeleteIds] = useState<string[]>([]);
     const isMobile = useMediaQuery('(max-width: 767px)');
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -93,6 +94,24 @@ export function ArchivePage() {
         }
     };
 
+    const handleBulkDelete = async (ticketIds: string[]) => {
+        setBulkDeleteIds(ticketIds);
+    };
+
+    const confirmBulkDelete = async () => {
+        if (bulkDeleteIds.length === 0) return;
+        try {
+            await bulkTicketAction(bulkDeleteIds, 'delete');
+            bulkDeleteIds.forEach(removeTicketFromState);
+            toast.success(`${bulkDeleteIds.length} tiket berhasil dihapus.`);
+        } catch (err) {
+            console.error('Failed to bulk delete:', err);
+            toast.error('Gagal menghapus tiket.');
+        } finally {
+            setBulkDeleteIds([]);
+        }
+    };
+
     if (loading) {
         return (
             <div className="h-full w-full flex items-center justify-center bg-background">
@@ -115,6 +134,7 @@ export function ArchivePage() {
                     onSelectTicket={handleSelectTicket}
                     onRestoreTicket={handleRestoreTicket}
                     onDeleteTicket={handleDeleteTicket}
+                    onBulkDelete={handleBulkDelete}
                 />
             </div>
 
@@ -152,6 +172,23 @@ export function ArchivePage() {
                     <AlertDialogCancel>Batal</AlertDialogCancel>
                     <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                         Hapus Permanen
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={bulkDeleteIds.length > 0} onOpenChange={(open) => { if (!open) setBulkDeleteIds([]); }}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Hapus {bulkDeleteIds.length} Tiket Secara Permanen?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Tindakan ini tidak dapat dibatalkan. Semua pesan dalam tiket-tiket ini akan ikut terhapus.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Batal</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        Hapus {bulkDeleteIds.length} Tiket
                     </AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>

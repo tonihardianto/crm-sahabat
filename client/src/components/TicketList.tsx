@@ -22,6 +22,7 @@ interface TicketListProps {
     onBulkArchive?: (ticketIds: string[]) => Promise<void>;
     onBulkResolve?: (ticketIds: string[]) => Promise<void>;
     onBulkAssign?: (ticketIds: string[], agentId: string) => Promise<void>;
+    onBulkDelete?: (ticketIds: string[]) => Promise<void>;
 }
 
 function formatTime(dateStr: string): string {
@@ -66,7 +67,7 @@ const statusDot: Record<string, string> = {
     RESOLVED: 'bg-gray-400',
 };
 
-export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicket, onArchiveTicket, onDeleteTicket, onRestoreTicket, onBulkArchive, onBulkResolve, onBulkAssign }: TicketListProps) {
+export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicket, onArchiveTicket, onDeleteTicket, onRestoreTicket, onBulkArchive, onBulkResolve, onBulkAssign, onBulkDelete }: TicketListProps) {
     const [search, setSearch] = useState('');
     const [showNewDialog, setShowNewDialog] = useState(false);
     const { user } = useAuth();
@@ -81,10 +82,10 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
     const enterSelectMode = useCallback(async () => {
         setSelectMode(true);
         setSelected(new Set());
-        if (agents.length === 0) {
+        if (agents.length === 0 && (onBulkAssign)) {
             try { setAgents(await fetchAgents()); } catch { /* ignore */ }
         }
-    }, [agents.length]);
+    }, [agents.length, onBulkAssign]);
 
     const exitSelectMode = useCallback(() => {
         setSelectMode(false);
@@ -103,7 +104,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
         setSelected(prev => prev.size === filteredIds.length ? new Set() : new Set(filteredIds));
     }, []);
 
-    const handleBulkAction = useCallback(async (action: 'archive' | 'resolve' | 'assign', agentId?: string) => {
+    const handleBulkAction = useCallback(async (action: 'archive' | 'resolve' | 'assign' | 'delete', agentId?: string) => {
         const ids = [...selected];
         if (ids.length === 0) return;
         setBulkLoading(true);
@@ -111,11 +112,12 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
             if (action === 'archive') await onBulkArchive?.(ids);
             else if (action === 'resolve') await onBulkResolve?.(ids);
             else if (action === 'assign' && agentId) await onBulkAssign?.(ids, agentId);
+            else if (action === 'delete') await onBulkDelete?.(ids);
             exitSelectMode();
         } finally {
             setBulkLoading(false);
         }
-    }, [selected, onBulkArchive, onBulkResolve, onBulkAssign, exitSelectMode]);
+    }, [selected, onBulkArchive, onBulkResolve, onBulkAssign, onBulkDelete, exitSelectMode]);
 
     const filtered = tickets.filter((t) => {
         const q = search.toLowerCase();
@@ -134,7 +136,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-foreground">Pesan</h2>
                     <div className="flex items-center gap-1">
-                        {(onBulkArchive || onBulkResolve || onBulkAssign) && (
+                        {(onBulkArchive || onBulkResolve || onBulkAssign || onBulkDelete) && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Button
@@ -385,6 +387,17 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                                         ))}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
+                            )}
+                            {onBulkDelete && (
+                                <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-7 text-xs gap-1.5 px-2.5 text-destructive border-destructive/30 hover:bg-destructive/10"
+                                    onClick={() => handleBulkAction('delete')}
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Hapus
+                                </Button>
                             )}
                         </>
                     )}

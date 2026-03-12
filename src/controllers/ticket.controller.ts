@@ -427,7 +427,7 @@ export async function bulkAction(req: AuthRequest, res: Response): Promise<void>
     try {
         const { ticketIds, action, agentId } = req.body as {
             ticketIds: string[];
-            action: 'archive' | 'resolve' | 'assign';
+            action: 'archive' | 'resolve' | 'assign' | 'delete';
             agentId?: string;
         };
 
@@ -436,8 +436,8 @@ export async function bulkAction(req: AuthRequest, res: Response): Promise<void>
             return;
         }
 
-        if (!['archive', 'resolve', 'assign'].includes(action)) {
-            res.status(400).json({ error: "action must be archive, resolve, or assign" });
+        if (!['archive', 'resolve', 'assign', 'delete'].includes(action)) {
+            res.status(400).json({ error: "action must be archive, resolve, assign, or delete" });
             return;
         }
 
@@ -460,6 +460,10 @@ export async function bulkAction(req: AuthRequest, res: Response): Promise<void>
             await prisma.ticket.updateMany({
                 where: { id: { in: ticketIds } },
                 data: { assignedAgentId: agentId, claimedById: agentId, claimedAt: new Date() },
+            });
+        } else if (action === 'delete') {
+            await prisma.ticket.deleteMany({
+                where: { id: { in: ticketIds } },
             });
         }
 
