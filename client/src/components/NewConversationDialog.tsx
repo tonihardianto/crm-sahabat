@@ -153,7 +153,7 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
 
     return (
         <Dialog open={open} onOpenChange={onClose}>
-            <DialogContent className="max-w-lg max-h-[85vh] flex flex-col">
+            <DialogContent className="max-w-lg max-h-[85vh] flex flex-col overflow-hidden">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <MessageSquarePlus className="w-5 h-5 text-blue-400" />
@@ -217,8 +217,8 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
 
                 {/* Step 2: Template + variables */}
                 {step === 2 && selectedContact && (
-                    <ScrollArea className="flex-1 max-h-[420px]">
-                        <div className="space-y-4 pr-2">
+                    <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+                        <div className="space-y-4 pr-1">
                             {/* Selected contact info */}
                             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border">
                                 <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center text-xs font-bold text-blue-400">
@@ -319,7 +319,7 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                                 </div>
                             </div>
                         </div>
-                    </ScrollArea>
+                    </div>
                 )}
 
                 {/* Error */}
@@ -333,11 +333,11 @@ export function NewConversationDialog({ open, onClose, onSuccess }: NewConversat
                         <Button
                             onClick={handleSend}
                             disabled={!selectedContact || !selectedTemplate || sending}
-                            className="gap-2"
+                            className="gap-2 bg-primary text-white hover:bg-primary/90 disabled:bg-primary/50 disabled:text-white/70"
                         >
                             {sending
                                 ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Mengirim...</>
-                                : <><Send className="w-4 h-4" />Kirim & Buat Tiket</>
+                                : <><Send className="w-4 h-4 text-white" /><span className='text-white'>Kirim dan Buat Tiket</span></>
                             }
                         </Button>
                     )}
