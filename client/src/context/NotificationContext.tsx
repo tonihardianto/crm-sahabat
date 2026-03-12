@@ -77,6 +77,11 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const { notifPref } = useAppSettings();
     const inAppEnabled = notifPref === 'INAPP' || notifPref === 'BOTH';
     const pushPrefEnabled = notifPref === 'PUSH' || notifPref === 'BOTH';
+
+    // Keep a ref so socket event handlers always read the latest value
+    const inAppEnabledRef = useRef(inAppEnabled);
+    useEffect(() => { inAppEnabledRef.current = inAppEnabled; }, [inAppEnabled]);
+
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
@@ -85,6 +90,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [pushEnabled, setPushEnabled] = useState(false);
     const swRegRef = useRef<ServiceWorkerRegistration | null>(null);
     const socketRef = useRef<Socket | null>(null);
+
+    // Define addNotification EARLY so socket handlers can close over the ref
+    const addNotification = useCallback((item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) => {
+        const newItem: NotificationItem = {
+            ...item,
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            read: false,
+            createdAt: new Date(),
+        };
+        setNotifications(prev => [newItem, ...prev].slice(0, 50));
+        setUnreadCount(prev => prev + 1);
+    }, []);
 
     // ── Service Worker registration ───────────────────────────
     useEffect(() => {
@@ -171,17 +188,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
     }, [pushEnabled, subscribePush, unsubscribePush]);
 
-    const addNotification = useCallback((item: Omit<NotificationItem, 'id' | 'read' | 'createdAt'>) => {
-        const newItem: NotificationItem = {
-            ...item,
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            read: false,
-            createdAt: new Date(),
-        };
-        setNotifications(prev => [newItem, ...prev].slice(0, 50));
-        setUnreadCount(prev => prev + 1);
-    }, []);
-
     // Sync push subscription with notifPref
     useEffect(() => {
         if (!user) return;
@@ -238,7 +244,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         socket.on('message:new', ({ message, contact }: { message: { direction: string; body?: string; type?: string }; contact?: { name: string } }) => {
             if (message.direction !== 'INBOUND') return;
-            if (!inAppEnabled) return;
+            if (!inAppEnabledRef.current) return;
 
             playNotificationSound();
 
@@ -271,7 +277,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         });
 
         socket.on('ticket:new', ({ ticket }: { ticket: { contact?: { name: string } } }) => {
-            if (!inAppEnabled) return;
+            if (!inAppEnabledRef.current) return;
             playNotificationSound();
 
             const contactName = ticket.contact?.name ?? 'kontak';
@@ -304,7 +310,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             fromAgent: string;
             toAgentName: string;
         }) => {
-            if (!inAppEnabled) return;
+            if (!inAppEnabledRef.current) return;
             playNotificationSound();
             addNotification({
                 type: 'handover',
@@ -338,7 +344,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             agentName: string;
             assignedBy: string;
         }) => {
-            if (!inAppEnabled) return;
+            if (!inAppEnabledRef.current) return;
             playNotificationSound();
             addNotification({
                 type: 'assign',

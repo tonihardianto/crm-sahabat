@@ -73,8 +73,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <NotificationProvider>
         <AppSettingsProvider>
+        <NotificationProvider>
         <Toaster position="top-right" closeButton />
         <DocumentTitle />
         <Routes>
@@ -88,8 +88,8 @@ export default function App() {
             </PrivateRoute>
           } />
         </Routes>
-        </AppSettingsProvider>
         </NotificationProvider>
+        </AppSettingsProvider>
       </AuthProvider>
     </BrowserRouter>
   );
