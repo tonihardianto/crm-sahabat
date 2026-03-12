@@ -4,7 +4,7 @@ import { TicketList } from '@/components/TicketList';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ContextPanel } from '@/components/ContextPanel';
 import { useSocket } from '@/hooks/useSocket';
-import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket, markMessagesRead, archiveTicket as apiArchiveTicket, deleteTicket as apiDeleteTicket } from '@/lib/api';
+import { fetchTickets, fetchTicketById, claimTicket as apiClaimTicket, markMessagesRead, archiveTicket as apiArchiveTicket, deleteTicket as apiDeleteTicket, bulkTicketAction } from '@/lib/api';
 import type { Ticket } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
@@ -190,6 +190,24 @@ export function TicketsPage() {
         }
     };
 
+    const handleBulkArchive = async (ticketIds: string[]) => {
+        await bulkTicketAction(ticketIds, 'archive');
+        ticketIds.forEach(removeTicketFromState);
+        toast.success(`${ticketIds.length} tiket berhasil diarsipkan.`);
+    };
+
+    const handleBulkResolve = async (ticketIds: string[]) => {
+        await bulkTicketAction(ticketIds, 'resolve');
+        ticketIds.forEach(removeTicketFromState);
+        toast.success(`${ticketIds.length} tiket berhasil diresolve.`);
+    };
+
+    const handleBulkAssign = async (ticketIds: string[], agentId: string) => {
+        await bulkTicketAction(ticketIds, 'assign', agentId);
+        await loadTickets();
+        toast.success(`${ticketIds.length} tiket berhasil di-assign.`);
+    };
+
     if (loading) {
         return (
             <div className="h-full w-full flex items-center justify-center bg-background">
@@ -213,6 +231,9 @@ export function TicketsPage() {
                     onNewTicket={handleNewOutboundTicket}
                     onArchiveTicket={handleArchiveTicket}
                     onDeleteTicket={handleDeleteTicket}
+                    onBulkArchive={handleBulkArchive}
+                    onBulkResolve={handleBulkResolve}
+                    onBulkAssign={handleBulkAssign}
                 />
             </div>
 

@@ -763,7 +763,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                 <InputGroupButton
                                     size="icon-sm"
                                     variant="ghost"
-                                    className="text-muted-foreground hover:text-foreground"
+                                    className="text-muted-foreground hover:bg-primary/10"
                                 >
                                     <Plus className="size-4" />
                                 </InputGroupButton>
@@ -820,7 +820,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             size="icon-sm"
                             variant="ghost"
                             onClick={() => setShowEmojiPicker(p => !p)}
-                            className="text-muted-foreground hover:text-foreground"
+                            className="text-muted-foreground hover:bg-primary/10"
                             title="Emoji"
                         >
                             <Smile className="w-4 h-4" />

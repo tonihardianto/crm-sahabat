@@ -264,6 +264,20 @@ export async function deleteTicket(ticketId: string): Promise<void> {
     if (!res.ok) throw new Error('Failed to delete ticket');
 }
 
+export async function bulkTicketAction(
+    ticketIds: string[],
+    action: 'archive' | 'resolve' | 'assign',
+    agentId?: string
+): Promise<{ success: boolean; affected: number }> {
+    const res = await apiFetch(`${API_BASE}/tickets/bulk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketIds, action, agentId }),
+    });
+    if (!res.ok) throw new Error('Bulk action failed');
+    return res.json();
+}
+
 export async function fetchArchivedTickets(): Promise<Ticket[]> {
     const res = await apiFetch(`${API_BASE}/tickets/archived`);
     if (!res.ok) throw new Error('Failed to fetch archived tickets');

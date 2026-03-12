@@ -417,3 +417,55 @@ export async function sendTemplateToTicket(req: AuthRequest, res: Response): Pro
         res.status(500).json({ message: msg });
     }
 }
+
+/**
+ * POST /api/tickets/bulk
+ * Bulk action: archive | resolve | assign untuk banyak tiket sekaligus.
+ * Body: { ticketIds: string[], action: 'archive' | 'resolve' | 'assign', agentId?: string }
+ */
+export async function bulkAction(req: AuthRequest, res: Response): Promise<void> {
+    try {
+        const { ticketIds, action, agentId } = req.body as {
+            ticketIds: string[];
+            action: 'archive' | 'resolve' | 'assign';
+            agentId?: string;
+        };
+
+        if (!Array.isArray(ticketIds) || ticketIds.length === 0) {
+            res.status(400).json({ error: "ticketIds is required and must be a non-empty array" });
+            return;
+        }
+
+        if (!['archive', 'resolve', 'assign'].includes(action)) {
+            res.status(400).json({ error: "action must be archive, resolve, or assign" });
+            return;
+        }
+
+        if (action === 'assign' && !agentId) {
+            res.status(400).json({ error: "agentId is required for assign action" });
+            return;
+        }
+
+        if (action === 'archive') {
+            await prisma.ticket.updateMany({
+                where: { id: { in: ticketIds } },
+                data: { status: 'ARCHIVED' },
+            });
+        } else if (action === 'resolve') {
+            await prisma.ticket.updateMany({
+                where: { id: { in: ticketIds } },
+                data: { status: 'RESOLVED', resolvedAt: new Date() },
+            });
+        } else if (action === 'assign' && agentId) {
+            await prisma.ticket.updateMany({
+                where: { id: { in: ticketIds } },
+                data: { assignedAgentId: agentId, claimedById: agentId, claimedAt: new Date() },
+            });
+        }
+
+        res.json({ success: true, affected: ticketIds.length });
+    } catch (error) {
+        console.error("[Ticket] Error in bulkAction:", error);
+        res.status(500).json({ error: "Bulk action failed" });
+    }
+}
