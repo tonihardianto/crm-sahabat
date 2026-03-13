@@ -674,7 +674,14 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                     </div>
                 )}
                 {showTemplatePicker && (
-                    <div className="mb-2 max-h-48 overflow-y-auto rounded-xl border border-border bg-card divide-y divide-border">
+                    <div className="mb-2 rounded-xl border border-border bg-card divide-y divide-border">
+                        <div className="flex items-center justify-between px-4 py-2 shrink-0">
+                            <span className="text-xs font-semibold text-muted-foreground">Pilih Template</span>
+                            <button onClick={() => setShowTemplatePicker(false)} className="p-0.5 rounded hover:bg-accent text-muted-foreground hover:text-foreground transition-colors">
+                                <X className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                        <div className="max-h-48 overflow-y-auto divide-y divide-border">
                         {templates.filter(t => windowOpen || t.status === 'APPROVED').length === 0 ? (
                             <div className="px-4 py-3 text-xs text-muted-foreground text-center">
                                 {windowOpen ? 'Belum ada template.' : 'Tidak ada template APPROVED. Sync atau buat template baru.'}
@@ -692,6 +699,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                 </button>
                             ))
                         )}
+                        </div>
                     </div>
                 )}
 

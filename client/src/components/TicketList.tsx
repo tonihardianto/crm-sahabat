@@ -294,7 +294,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end" className="w-44">
                                                 {onRestoreTicket && (
-                                                    <DropdownMenuItem
+                                                    <DropdownMenuItem className='text-xs'
                                                         onClick={(e) => { e.stopPropagation(); onRestoreTicket(ticket.id); }}
                                                     >
                                                         <Archive className="w-4 h-4 mr-2" />
@@ -302,7 +302,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                                                     </DropdownMenuItem>
                                                 )}
                                                 {onArchiveTicket && (
-                                                    <DropdownMenuItem
+                                                    <DropdownMenuItem className='text-xs'
                                                         onClick={(e) => { e.stopPropagation(); onArchiveTicket(ticket.id); }}
                                                     >
                                                         <Archive className="w-4 h-4 mr-2" />
@@ -311,10 +311,10 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
                                                 )}
                                                 {isAdmin && onDeleteTicket && (
                                                     <>
-                                                        <DropdownMenuSeparator />
+                                                        {/* <DropdownMenuSeparator /> */}
                                                         <DropdownMenuItem
                                                             onClick={(e) => { e.stopPropagation(); onDeleteTicket(ticket.id); }}
-                                                            className="text-destructive focus:text-destructive"
+                                                            className="text-destructive text-xs focus:text-destructive"
                                                         >
                                                             <Trash2 className="w-4 h-4 mr-2" />
                                                             Hapus Permanen
