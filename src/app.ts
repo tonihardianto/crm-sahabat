@@ -15,6 +15,7 @@ import settingsRoutes from "./routes/settings.routes";
 import clickupRoutes from "./routes/clickup.routes";
 import quickReplyRoutes from "./routes/quick-reply.routes";
 import pushRoutes from "./routes/push.routes";
+import calendarRoutes from "./routes/calendar.routes";
 import { requireAuth } from "./middlewares/auth.middleware";
 
 const app = express();
@@ -50,6 +51,7 @@ app.use("/api/settings", requireAuth, settingsRoutes);
 app.use("/api/clickup", clickupRoutes);
 app.use("/api/quick-replies", requireAuth, quickReplyRoutes);
 app.use("/api/push", requireAuth, pushRoutes);
+app.use("/api/calendar", calendarRoutes); // GET public, POST/PUT/DELETE admin-only (handled in router)
 
 // ---- Health Check ----
 app.get("/health", (_req, res) => {

@@ -30,6 +30,7 @@ model User {
   managedClients    Client[]           @relation("ClientPIC")
   settings          UserSettings?
   pushSubscriptions PushSubscription[]
+  calendarEvents    CalendarEvent[]
 
   @@map("users")
 }
@@ -372,4 +373,28 @@ model PushSubscription {
 
   @@index([userId])
   @@map("push_subscriptions")
+}
+
+// ============================================================
+// Calendar Events (Event Kalender Publik)
+// ============================================================
+
+model CalendarEvent {
+  id          String    @id @default(cuid())
+  title       String
+  description String?   @db.Text
+  startDate   DateTime  @map("start_date")
+  endDate     DateTime? @map("end_date")
+  allDay      Boolean   @default(false) @map("all_day")
+  color       String?   // Warna event hex, e.g. "#3b82f6"
+  location    String?
+  createdById String    @map("created_by_id")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([createdById])
+  @@index([startDate])
+  @@map("calendar_events")
 }

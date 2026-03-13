@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive, CalendarDays } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -12,6 +12,7 @@ const generalNavItems = [
     { to: '/clients', icon: Building2, label: 'Clients' },
     { to: '/contacts', icon: Users, label: 'Contacts' },
     { to: '/templates', icon: FileText, label: 'Templates' },
+    { to: '/calendar', icon: CalendarDays, label: 'Kalender' },
 ];
 
 function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?: () => void }) {

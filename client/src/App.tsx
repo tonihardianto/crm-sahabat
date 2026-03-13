@@ -16,6 +16,8 @@ import { ContactsPage } from '@/pages/ContactsPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
 import { UsersPage } from '@/pages/UsersPage';
 import { AppSettingsPage } from '@/pages/AppSettingsPage';
+import { CalendarPage } from '@/pages/CalendarPage';
+import { PublicCalendarPage } from '@/pages/PublicCalendarPage';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -24,6 +26,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/clients': 'Klien',
   '/contacts': 'Kontak',
   '/templates': 'Template',
+  '/calendar': 'Kalender Event',
   '/settings': 'Pengaturan',
   '/users': 'Pengguna',
   '/login': 'Login',
@@ -56,6 +59,7 @@ function AppLayout() {
             <Route path="/clients" element={<ClientsPage />} />
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/users" element={
               <PrivateRoute adminOnly>
@@ -80,6 +84,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/public/calendar" element={<PublicCalendarPage />} />
 
           {/* Protected — all other pages */}
           <Route path="/*" element={

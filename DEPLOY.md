@@ -197,7 +197,83 @@ git pull
 npm install
 npm run build
 cd client && npm run build && cd ..
+cd ../calendar && npm run build && cd ..
 pm2 restart crm-backend
+```
+
+---
+
+## Subdomain Kalender Publik
+
+Subdomain `calendar.sahabatmedia.co.id` mengarah ke build terpisah di `calendar/dist/` —
+lebih ringan, tidak mengekspos route CRM.
+
+### 1. Build calendar-public
+
+```bash
+cd /var/www/crm/calendar
+npm install
+npm run build
+# Output: calendar/dist/
+```
+
+### 2. DNS
+
+Tambahkan **A record** di panel DNS:
+- Name: `calendar`
+- Value: IP VPS yang sama dengan `crm.sahabatmedia.co.id`
+
+### 3. VirtualHost Apache2
+
+```bash
+sudo nano /etc/apache2/sites-available/calendar.sahabatmedia.co.id.conf
+```
+
+Isi:
+
+```apache
+<VirtualHost *:80>
+    ServerName calendar.sahabatmedia.co.id
+    RewriteEngine On
+    RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName calendar.sahabatmedia.co.id
+
+    SSLEngine On
+    SSLCertificateFile    /etc/letsencrypt/live/calendar.sahabatmedia.co.id/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/calendar.sahabatmedia.co.id/privkey.pem
+
+    # Serve calendar-public build (statis, hanya FullCalendar)
+    DocumentRoot /var/www/crm/calendar/dist
+    <Directory /var/www/crm/calendar/dist>
+        Options -Indexes
+        AllowOverride All
+        Require all granted
+        FallbackResource /index.html
+    </Directory>
+
+    # Proxy /api ke backend yang sama
+    ProxyRequests Off
+    ProxyPreserveHost On
+    ProxyPass /api http://localhost:3000/api
+    ProxyPassReverse /api http://localhost:3000/api
+
+    ErrorLog ${APACHE_LOG_DIR}/calendar-error.log
+    CustomLog ${APACHE_LOG_DIR}/calendar-access.log combined
+</VirtualHost>
+```
+
+```bash
+sudo a2ensite calendar.sahabatmedia.co.id.conf
+sudo systemctl reload apache2
+```
+
+### 4. Pasang SSL
+
+```bash
+sudo certbot --apache -d calendar.sahabatmedia.co.id
 ```
 
 ---
