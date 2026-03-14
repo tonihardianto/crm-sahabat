@@ -90,7 +90,10 @@ export async function sendTemplateMessage(
     if (!response.ok) {
         const error = await response.json();
         console.error("[WhatsApp API] Template send failed:", JSON.stringify(error, null, 2));
-        throw new Error(`WhatsApp API error: ${response.status} ${response.statusText}`);
+        const metaMsg = (error as { error?: { message?: string; error_data?: { details?: string } } })?.error?.message
+            ?? (error as { error?: { error_data?: { details?: string } } })?.error?.error_data?.details
+            ?? JSON.stringify(error);
+        throw new Error(`WhatsApp API error: ${metaMsg}`);
     }
 
     const result = (await response.json()) as { messages?: { id: string }[] };

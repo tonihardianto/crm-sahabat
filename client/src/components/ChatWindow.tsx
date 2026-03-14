@@ -313,9 +313,12 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
         }
     };
 
+    const [templateError, setTemplateError] = useState<string | null>(null);
+
     const handleSendTemplate = async () => {
         if (!ticket || !templateDialog) return;
         setSendingTemplate(true);
+        setTemplateError(null);
         try {
             const { tpl, vars } = templateDialog;
             let resolvedBody = tpl.bodyText;
@@ -328,9 +331,11 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                 : [];
             await apiSendTemplate(ticket.id, tpl.name, tpl.language || 'id', components, resolvedBody);
             setTemplateDialog(null);
+            setTemplateError(null);
             onMessageSent();
         } catch (err) {
             console.error('Failed to send template:', err);
+            setTemplateError(err instanceof Error ? err.message : 'Gagal mengirim template');
         } finally {
             setSendingTemplate(false);
         }
@@ -898,8 +903,13 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                 })}
                             </div>
                         )}
+                        {templateError && (
+                            <div className="mb-3 px-3 py-2 rounded-lg bg-destructive/10 border border-destructive/30 text-xs text-destructive">
+                                {templateError}
+                            </div>
+                        )}
                         <div className="flex gap-2 justify-end">
-                            <button onClick={() => setTemplateDialog(null)} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors">
+                            <button onClick={() => { setTemplateDialog(null); setTemplateError(null); }} className="px-4 py-2 text-sm rounded-lg border border-border hover:bg-accent transition-colors">
                                 Batal
                             </button>
                             <button
