@@ -138,22 +138,33 @@ async function findOrCreateTicket(contactId: string) {
     });
     const pic = contactWithPic?.client?.pic ?? null;
 
-    const ticketNumber = await generateTicketNumber();
-
-    ticket = await prisma.ticket.create({
-        data: {
-            ticketNumber,
-            contactId,
-            category: "SERVICE",
-            status: "NEW",
-            priority: "MEDIUM",
-            ...(pic ? {
-                assignedAgentId: pic.id,
-                claimedById: pic.id,
-                claimedAt: new Date(),
-            } : {}),
-        },
-    });
+    const MAX_RETRIES = 5;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const ticketNumber = await generateTicketNumber();
+        try {
+            ticket = await prisma.ticket.create({
+                data: {
+                    ticketNumber,
+                    contactId,
+                    category: "SERVICE",
+                    status: "NEW",
+                    priority: "MEDIUM",
+                    ...(pic ? {
+                        assignedAgentId: pic.id,
+                        claimedById: pic.id,
+                        claimedAt: new Date(),
+                    } : {}),
+                },
+            });
+            break;
+        } catch (e: unknown) {
+            const isUniqueViolation =
+                e instanceof Error && (e as { code?: string }).code === "P2002";
+            if (isUniqueViolation && attempt < MAX_RETRIES - 1) continue;
+            throw e;
+        }
+    }
+    if (!ticket) throw new Error("Failed to generate unique ticket number after retries");
 
     if (pic) {
         // Buat internal system note tentang auto-assign

@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { generateTicketNumber } from "../utils/generateTicketNumber";
 
 /**
  * Ambil semua tiket, sorted by pesan terbaru.
@@ -132,34 +133,43 @@ export async function createOutboundTicket(data: {
     category?: "BUG" | "FEATURE_REQUEST" | "SERVICE";
     priority?: "LOW" | "MEDIUM" | "HIGH" | "URGENT";
 }) {
-    // Auto-generate ticket number
-    const count = await prisma.ticket.count();
-    const ticketNumber = `TKT-${String(count + 1).padStart(5, "0")}`;
-
-    return prisma.ticket.create({
-        data: {
-            ticketNumber,
-            contactId: data.contactId,
-            status: "OPEN",
-            category: data.category ?? "SERVICE",
-            priority: data.priority ?? "MEDIUM",
-            subject: data.subject ?? null,
-            assignedAgentId: data.agentId,
-            claimedById: data.agentId,
-            claimedAt: new Date(),
-        },
-        include: {
-            contact: {
-                include: { client: true },
-            },
-            assignedAgent: { select: { id: true, name: true } },
-            claimedBy: { select: { id: true, name: true } },
-            messages: {
-                orderBy: { timestamp: "asc" },
-                include: { sentBy: { select: { id: true, name: true } } },
-            },
-        },
-    });
+    // Auto-generate ticket number dengan retry untuk handle race condition
+    const MAX_RETRIES = 5;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const ticketNumber = await generateTicketNumber();
+        try {
+            return await prisma.ticket.create({
+                data: {
+                    ticketNumber,
+                    contactId: data.contactId,
+                    status: "OPEN",
+                    category: data.category ?? "SERVICE",
+                    priority: data.priority ?? "MEDIUM",
+                    subject: data.subject ?? null,
+                    assignedAgentId: data.agentId,
+                    claimedById: data.agentId,
+                    claimedAt: new Date(),
+                },
+                include: {
+                    contact: {
+                        include: { client: true },
+                    },
+                    assignedAgent: { select: { id: true, name: true } },
+                    claimedBy: { select: { id: true, name: true } },
+                    messages: {
+                        orderBy: { timestamp: "asc" },
+                        include: { sentBy: { select: { id: true, name: true } } },
+                    },
+                },
+            });
+        } catch (e: unknown) {
+            const isUniqueViolation =
+                e instanceof Error && (e as { code?: string }).code === "P2002";
+            if (isUniqueViolation && attempt < MAX_RETRIES - 1) continue;
+            throw e;
+        }
+    }
+    throw new Error("Failed to generate unique ticket number after retries");
 }
 
 /**
