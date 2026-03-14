@@ -7,9 +7,9 @@ import prisma from "../lib/prisma";
  */
 export async function generateTicketNumber(): Promise<string> {
     const result = await prisma.$queryRaw<[{ max: number | null }]>`
-        SELECT MAX(CAST(REGEXP_REPLACE(ticket_number, 'TKT-', '') AS INTEGER)) as max
+        SELECT MAX(CAST(SUBSTRING(ticket_number, 5) AS UNSIGNED)) as max
         FROM tickets
-        WHERE ticket_number ~ '^TKT-[0-9]+$'
+        WHERE ticket_number REGEXP '^TKT-[0-9]+$'
     `;
     const nextNumber = (result[0]?.max ?? 0) + 1;
     return `TKT-${nextNumber.toString().padStart(5, "0")}`;
