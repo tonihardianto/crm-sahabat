@@ -4,8 +4,21 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import multiMonthPlugin from '@fullcalendar/multimonth';
 import type { EventInput } from '@fullcalendar/core';
-import { Calendar, MapPin, Info, X } from 'lucide-react';
+import { Calendar, MapPin, Info, X, Sun, Moon } from 'lucide-react';
 import './calendar.css';
+
+function useTheme() {
+    const [dark, setDark] = useState(() =>
+        document.documentElement.classList.contains('dark')
+    );
+    const toggle = () => {
+        const next = !dark;
+        setDark(next);
+        document.documentElement.classList.toggle('dark', next);
+        localStorage.setItem('theme', next ? 'dark' : 'light');
+    };
+    return { dark, toggle };
+}
 
 interface CalendarEvent {
     id: string;
@@ -23,6 +36,7 @@ export function PublicCalendarPage() {
     const [events, setEvents] = useState<CalendarEvent[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+    const { dark, toggle } = useTheme();
 
     useEffect(() => {
         fetch('/api/calendar')
@@ -60,14 +74,21 @@ export function PublicCalendarPage() {
                         <Calendar className="w-4 h-4 text-white" />
                     </div> */}
                     <div className="min-w-0">
-                        <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Kalender Event</h1>
+                        <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Kalender Kegiatan</h1>
                         <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight truncate">Tim Support SIMRS Sahabat</p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-2">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                             Live
                         </span>
+                        <button
+                            onClick={toggle}
+                            title={dark ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                            {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                        </button>
                     </div>
                 </div>
             </header>
@@ -84,7 +105,7 @@ export function PublicCalendarPage() {
                         {/* Card header with event count */}
                         <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800">
                             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                                {events.length} event terjadwal
+                                {events.length} kegiatan terjadwal
                             </p>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                 {['#3b82f6','#22c55e','#ef4444','#f97316','#a855f7','#ec4899'].map(c => (

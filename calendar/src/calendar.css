@@ -47,11 +47,11 @@
 
 /* ─── Light Mode ────────────────────────────────────────────────────────────── */
 .fc .fc-toolbar-title { color: #0f172a; }
-.fc .fc-daygrid-day-number { color: #374151; }
+.fc .fc-daygrid-day-number { color: #5f6b7f; }
 .fc .fc-col-header-cell-cushion { color: #6b7280; }
-.fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
-.fc-theme-standard .fc-scrollgrid { border-color: #e5e7eb; border-radius: 25px; }
-.fc .fc-daygrid-day.fc-day-today { background-color: #eff6ff !important; }
+.fc-theme-standard td, .fc-theme-standard th { border-color: #bcbec3; }
+.fc-theme-standard .fc-scrollgrid { border-color: #bcbec3; border-radius: 25px; }
+.fc .fc-daygrid-day.fc-day-today { background-color: #b9d3f4 !important; }
 .fc .fc-day-other .fc-daygrid-day-number { color: #d1d5db; }
 .fc .fc-more-link { color: #2563eb; }
 
@@ -63,12 +63,12 @@
     .fc .fc-col-header-cell-cushion { color: #64748b; border-radius: 25px;}
     .fc-theme-standard td, .fc-theme-standard th { border-color: #2f3b4f; }
     .fc-theme-standard .fc-scrollgrid { border-color: #1e293b; }
-    .fc .fc-day-other .fc-daygrid-day-number { color: #334155; }
+    .fc .fc-day-other .fc-daygrid-day-number { color: #485d7b; }
     .fc .fc-more-link { color: #60a5fa; }
     .fc .fc-button-primary:not(.fc-button-active) { background-color: #1d4ed8 !important; }
 
     /* Today highlight — daygrid & timegrid */
-    .fc .fc-daygrid-day.fc-day-today { background-color: rgba(37, 99, 235, 0.12) !important; }
+    .fc .fc-daygrid-day.fc-day-today { background-color: rgba(68, 122, 238, 0.42) !important; }
     .fc .fc-timegrid-col.fc-day-today { background-color: rgba(37, 99, 235, 0.08) !important; }
     .fc .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #60a5fa; border-radius: 25px; }
 
