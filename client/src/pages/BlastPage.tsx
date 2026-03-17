@@ -509,7 +509,7 @@ export function BlastPage() {
                                             <p className="text-sm text-muted-foreground p-4 text-center">Tidak ada template APPROVED</p>
                                         ) : filteredTemplates.map(t => (
                                             <div key={t.id}
-                                                onClick={() => setSelectedTemplate(t)}
+                                                onClick={() => handleSelectTemplate(t)}
                                                 className={`p-3 cursor-pointer border-b border-border last:border-b-0 transition-colors ${
                                                     selectedTemplate?.id === t.id ? 'bg-orange-500/10 border-l-2 border-l-orange-500' : 'hover:bg-muted/50'
                                                 }`}>
