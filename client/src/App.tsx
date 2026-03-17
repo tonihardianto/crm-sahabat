@@ -18,6 +18,7 @@ import { UsersPage } from '@/pages/UsersPage';
 import { AppSettingsPage } from '@/pages/AppSettingsPage';
 import { CalendarPage } from '@/pages/CalendarPage';
 import { PublicCalendarPage } from '@/pages/PublicCalendarPage';
+import { BlastPage } from '@/pages/BlastPage';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -26,6 +27,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/clients': 'Klien',
   '/contacts': 'Kontak',
   '/templates': 'Template',
+  '/blast': 'Blast Campaign',
   '/calendar': 'Kalender Event',
   '/settings': 'Pengaturan',
   '/users': 'Pengguna',
@@ -60,6 +62,7 @@ function AppLayout() {
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/templates" element={<TemplatesPage />} />
             <Route path="/calendar" element={<CalendarPage />} />
+            <Route path="/blast" element={<BlastPage />} />
             <Route path="/settings" element={<AppSettingsPage />} />
             <Route path="/users" element={
               <PrivateRoute adminOnly>

@@ -273,18 +273,20 @@ enum TemplateStatus {
 // ============================================================
 
 model BlastCampaign {
-  id            String             @id @default(cuid())
-  name          String // Nama campaign
-  templateName  String             @map("template_name") // Nama template yang digunakan
-  status        BlastCampaignStatus @default(DRAFT)
-  totalRecipients Int              @default(0) @map("total_recipients")
-  sentCount     Int                @default(0) @map("sent_count")
-  failedCount   Int                @default(0) @map("failed_count")
-  scheduledAt   DateTime?          @map("scheduled_at")
-  startedAt     DateTime?          @map("started_at")
-  completedAt   DateTime?          @map("completed_at")
-  createdAt     DateTime           @default(now())
-  updatedAt     DateTime           @updatedAt
+  id              String              @id @default(cuid())
+  name            String // Nama campaign
+  templateName    String              @map("template_name") // Nama template yang digunakan
+  languageCode    String              @default("id") @map("language_code")
+  components      String?             @db.LongText // JSON array of template components
+  status          BlastCampaignStatus @default(DRAFT)
+  totalRecipients Int                 @default(0) @map("total_recipients")
+  sentCount       Int                 @default(0) @map("sent_count")
+  failedCount     Int                 @default(0) @map("failed_count")
+  scheduledAt     DateTime?           @map("scheduled_at")
+  startedAt       DateTime?           @map("started_at")
+  completedAt     DateTime?           @map("completed_at")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
 
   recipients BlastRecipient[]
 

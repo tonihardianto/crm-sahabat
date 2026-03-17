@@ -383,3 +383,92 @@ export async function removePushSubscription(endpoint: string): Promise<void> {
         body: JSON.stringify({ endpoint }),
     });
 }
+
+// ── Blast Campaigns ───────────────────────────────────────────
+
+export type BlastCampaignStatus = 'DRAFT' | 'SCHEDULED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type BlastRecipientStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'FAILED';
+
+export interface BlastRecipient {
+    id: string;
+    campaignId: string;
+    phoneNumber: string;
+    contactName: string | null;
+    status: BlastRecipientStatus;
+    wamid: string | null;
+    sentAt: string | null;
+    deliveredAt: string | null;
+    errorMessage: string | null;
+    createdAt: string;
+}
+
+export interface BlastCampaign {
+    id: string;
+    name: string;
+    templateName: string;
+    languageCode: string;
+    components: string | null;
+    status: BlastCampaignStatus;
+    totalRecipients: number;
+    sentCount: number;
+    failedCount: number;
+    scheduledAt: string | null;
+    startedAt: string | null;
+    completedAt: string | null;
+    createdAt: string;
+    updatedAt: string;
+    recipients?: BlastRecipient[];
+    _count?: { recipients: number };
+}
+
+export async function fetchBlastCampaigns(): Promise<BlastCampaign[]> {
+    const res = await apiFetch(`${API_BASE}/blast`);
+    if (!res.ok) throw new Error('Failed to fetch campaigns');
+    return res.json();
+}
+
+export async function fetchBlastCampaign(id: string): Promise<BlastCampaign> {
+    const res = await apiFetch(`${API_BASE}/blast/${id}`);
+    if (!res.ok) throw new Error('Failed to fetch campaign');
+    return res.json();
+}
+
+export async function createBlastCampaign(data: {
+    name: string;
+    templateName: string;
+    languageCode: string;
+    components?: unknown[];
+    contactIds: string[];
+}): Promise<BlastCampaign> {
+    const res = await apiFetch(`${API_BASE}/blast`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || 'Failed to create campaign');
+    }
+    return res.json();
+}
+
+export async function startBlastCampaign(id: string): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/blast/${id}/start`, { method: 'POST' });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || 'Failed to start campaign');
+    }
+}
+
+export async function cancelBlastCampaign(id: string): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/blast/${id}/cancel`, { method: 'POST' });
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error || 'Failed to cancel campaign');
+    }
+}
+
+export async function deleteBlastCampaign(id: string): Promise<void> {
+    const res = await apiFetch(`${API_BASE}/blast/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete campaign');
+}

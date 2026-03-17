@@ -1,4 +1,5 @@
 import prisma from "../lib/prisma";
+import { markBlastRecipientDelivered } from "./blast.service";
 import { emitNewMessage, emitNewTicket, emitMessageStatus, emitAssign } from "../lib/socket";
 import { generateTicketNumber } from "../utils/generateTicketNumber";
 import { markAsRead, getMediaUrl, downloadMedia } from "../lib/whatsapp";
@@ -321,9 +322,12 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                 for (const status of value.statuses) {
                     try {
                         if (status.status === "delivered") {
+                            const deliveredAt = new Date(parseInt(status.timestamp) * 1000);
+                            // Update blast recipient jika ada
+                            await markBlastRecipientDelivered(status.id, deliveredAt);
                             const msg = await prisma.message.update({
                                 where: { wamid: status.id },
-                                data: { deliveredAt: new Date(parseInt(status.timestamp) * 1000) },
+                                data: { deliveredAt },
                             });
                             emitMessageStatus(msg.ticketId, status.id, "delivered");
                         } else if (status.status === "read") {
