@@ -75,6 +75,11 @@ function ProgressBar({ sent, failed, total }: { sent: number; failed: number; to
 
 // ── Main Component ───────────────────────────────────────────
 
+function detectVars(bodyText: string): number[] {
+    const indices = Array.from(bodyText.matchAll(/\{\{(\d+)\}\}/g)).map(m => parseInt(m[1]));
+    return [...new Set(indices)].sort((a, b) => a - b);
+}
+
 export function BlastPage() {
     const [campaigns, setCampaigns] = useState<BlastCampaign[]>([]);
     const [search, setSearch] = useState('');
@@ -93,7 +98,8 @@ export function BlastPage() {
     const [templateSearch, setTemplateSearch] = useState('');
     const [contactSearch, setContactSearch] = useState('');
     const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
-    const [formStep, setFormStep] = useState<1 | 2>(1);
+    const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
+    const [templateVars, setTemplateVars] = useState<Record<number, string>>({});
     const [submitting, setSubmitting] = useState(false);
 
     // Detail dialog
@@ -136,6 +142,7 @@ export function BlastPage() {
         setContactSearch('');
         setSelectedContactIds(new Set());
         setFormStep(1);
+        setTemplateVars({});
         setCreateOpen(true);
 
         if (templates.length === 0 || contacts.length === 0) {
@@ -181,15 +188,26 @@ export function BlastPage() {
         } catch { /* ignore */ }
     };
 
+    const handleSelectTemplate = (t: Template) => {
+        setSelectedTemplate(t);
+        const vars: Record<number, string> = {};
+        detectVars(t.bodyText).forEach(i => { vars[i] = ''; });
+        setTemplateVars(vars);
+    };
+
     const handleCreate = async () => {
         if (!formName.trim() || !selectedTemplate || selectedContactIds.size === 0) return;
         setSubmitting(true);
+        const paramEntries = Object.entries(templateVars).sort(([a], [b]) => parseInt(a) - parseInt(b));
+        const components: unknown[] = paramEntries.length > 0
+            ? [{ type: 'body', parameters: paramEntries.map(([, val]) => ({ type: 'text', text: val })) }]
+            : [];
         try {
             await createBlastCampaign({
                 name: formName.trim(),
                 templateName: selectedTemplate.name,
                 languageCode: selectedTemplate.language || 'id',
-                components: [],
+                components,
                 contactIds: Array.from(selectedContactIds),
             });
             toast.success('Campaign berhasil dibuat sebagai Draft');
@@ -256,6 +274,10 @@ export function BlastPage() {
     };
 
     const clearAll = () => setSelectedContactIds(new Set());
+
+    const templateVarIndices = selectedTemplate ? detectVars(selectedTemplate.bodyText) : [];
+    const hasVars = templateVarIndices.length > 0;
+    const totalSteps = hasVars ? 3 : 2;
 
     const filteredCampaigns = campaigns.filter(c =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -440,19 +462,22 @@ export function BlastPage() {
                             Buat Blast Campaign
                         </DialogTitle>
                         {/* Step indicator */}
-                        <div className="flex items-center gap-2 mt-2">
-                            {[1, 2].map(step => (
-                                <div key={step} className="flex items-center gap-1.5">
-                                    <div className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-colors ${
-                                        formStep === step ? 'bg-orange-500 text-white' :
-                                        formStep > step ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
-                                    }`}>{formStep > step ? '✓' : step}</div>
-                                    <span className={`text-xs ${formStep === step ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
-                                        {step === 1 ? 'Template & Nama' : 'Pilih Kontak'}
-                                    </span>
-                                    {step < 2 && <ChevronDown className="w-3 h-3 text-muted-foreground rotate-[-90deg]" />}
-                                </div>
-                            ))}
+                        <div className="flex items-center gap-2 mt-2 flex-wrap">
+                            {(hasVars ? ['Template & Nama', 'Pilih Kontak', 'Isi Variabel'] : ['Template & Nama', 'Pilih Kontak']).map((label, i) => {
+                                const step = i + 1;
+                                return (
+                                    <div key={step} className="flex items-center gap-1.5">
+                                        <div className={`w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center transition-colors ${
+                                            formStep === step ? 'bg-orange-500 text-white' :
+                                            formStep > step ? 'bg-emerald-500 text-white' : 'bg-muted text-muted-foreground'
+                                        }`}>{formStep > step ? '✓' : step}</div>
+                                        <span className={`text-xs ${formStep === step ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                                            {label}
+                                        </span>
+                                        {step < totalSteps && <ChevronDown className="w-3 h-3 text-muted-foreground rotate-[-90deg]" />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </DialogHeader>
 
@@ -508,7 +533,7 @@ export function BlastPage() {
                                     </div>
                                 )}
                             </div>
-                        ) : (
+                        ) : formStep === 2 ? (
                             <div className="p-6 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-sm font-medium text-foreground">
@@ -555,11 +580,44 @@ export function BlastPage() {
                                     ))}
                                 </ScrollArea>
                             </div>
+                        ) : (
+                            <div className="p-6 space-y-4">
+                                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
+                                    Variabel ini berlaku sama untuk <span className="font-semibold">semua penerima</span>. Pastikan nilainya sesuai sebelum mengirim.
+                                </div>
+                                <div>
+                                    <label className="text-sm font-medium text-foreground block mb-2">Isi Variabel</label>
+                                    <div className="space-y-2.5">
+                                        {templateVarIndices.map(idx => (
+                                            <div key={idx} className="flex items-center gap-3">
+                                                <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
+                                                <Input
+                                                    value={templateVars[idx] ?? ''}
+                                                    onChange={e => setTemplateVars(prev => ({ ...prev, [idx]: e.target.value }))}
+                                                    placeholder={`Nilai untuk {{${idx}}}`}
+                                                    className="flex-1"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                {selectedTemplate && (
+                                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                        <p className="text-[10px] text-blue-300/70 mb-1.5">Preview pesan:</p>
+                                        <p className="text-xs text-foreground whitespace-pre-wrap">
+                                            {templateVarIndices.reduce(
+                                                (text, idx) => text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), templateVars[idx] || `[var ${idx}]`),
+                                                selectedTemplate.bodyText
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
                         )}
                     </div>
 
                     <DialogFooter className="px-6 py-4 border-t border-border shrink-0 flex-row gap-2 justify-between">
-                        <Button variant="outline" onClick={() => formStep === 1 ? setCreateOpen(false) : setFormStep(1)}>
+                        <Button variant="outline" onClick={() => formStep === 1 ? setCreateOpen(false) : setFormStep((formStep - 1) as 1 | 2 | 3)}>
                             {formStep === 1 ? 'Batal' : '← Kembali'}
                         </Button>
                         {formStep === 1 ? (
@@ -568,9 +626,15 @@ export function BlastPage() {
                                 onClick={() => setFormStep(2)}>
                                 Selanjutnya →
                             </Button>
-                        ) : (
+                        ) : formStep === 2 ? (
                             <Button
                                 disabled={selectedContactIds.size === 0 || submitting}
+                                onClick={() => hasVars ? setFormStep(3) : handleCreate()}>
+                                {hasVars ? 'Selanjutnya →' : (submitting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</> : `Simpan Draft (${selectedContactIds.size} kontak)`)}
+                            </Button>
+                        ) : (
+                            <Button
+                                disabled={submitting}
                                 onClick={handleCreate}>
                                 {submitting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</> : `Simpan Draft (${selectedContactIds.size} kontak)`}
                             </Button>
