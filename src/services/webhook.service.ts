@@ -323,19 +323,18 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                     try {
                         if (status.status === "delivered") {
                             const deliveredAt = new Date(parseInt(status.timestamp) * 1000);
-                            // Update blast recipient jika ada
                             await markBlastRecipientDelivered(status.id, deliveredAt);
-                            const msg = await prisma.message.update({
-                                where: { wamid: status.id },
-                                data: { deliveredAt },
-                            });
-                            emitMessageStatus(msg.ticketId, status.id, "delivered");
+                            const updated = await prisma.message.findUnique({ where: { wamid: status.id }, select: { ticketId: true } });
+                            if (updated) {
+                                await prisma.message.update({ where: { wamid: status.id }, data: { deliveredAt } });
+                                emitMessageStatus(updated.ticketId, status.id, "delivered");
+                            }
                         } else if (status.status === "read") {
-                            const msg = await prisma.message.update({
-                                where: { wamid: status.id },
-                                data: { readAt: new Date(parseInt(status.timestamp) * 1000) },
-                            });
-                            emitMessageStatus(msg.ticketId, status.id, "read");
+                            const updated = await prisma.message.findUnique({ where: { wamid: status.id }, select: { ticketId: true } });
+                            if (updated) {
+                                await prisma.message.update({ where: { wamid: status.id }, data: { readAt: new Date(parseInt(status.timestamp) * 1000) } });
+                                emitMessageStatus(updated.ticketId, status.id, "read");
+                            }
                         } else if (status.status === "failed") {
                             const errors = (status as unknown as { errors?: { code: number; title: string }[] }).errors;
                             const errDetail = errors?.[0] ? `${errors[0].code}: ${errors[0].title}` : "unknown";

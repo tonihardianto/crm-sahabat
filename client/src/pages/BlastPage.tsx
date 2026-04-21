@@ -357,7 +357,7 @@ export function BlastPage() {
             </div>
 
             {/* Campaign List */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 overflow-y-auto">
                 <div className="p-4 md:p-8 space-y-3">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
