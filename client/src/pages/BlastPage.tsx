@@ -381,72 +381,51 @@ export function BlastPage() {
                             const total = campaign.totalRecipients;
                             const done = campaign.sentCount + campaign.failedCount;
                             return (
-                                <Card key={campaign.id} className="cursor-pointer hover:border-border/80 transition-colors" onClick={() => openDetail(campaign.id)}>
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2 flex-wrap mb-1">
-                                                    <span className="font-semibold text-sm text-foreground truncate">{campaign.name}</span>
-                                                    <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${cfg.color}`}>
-                                                        {cfg.label}
-                                                    </span>
-                                                    {campaign.status === 'IN_PROGRESS' && (
-                                                        <Loader2 className="w-3 h-3 animate-spin text-blue-400" />
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-muted-foreground mb-2">
-                                                    Template: <span className="font-mono text-foreground/70">{campaign.templateName}</span>
-                                                </p>
+                                <div key={campaign.id}
+                                    className="flex items-center justify-between gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:bg-muted/40 cursor-pointer transition-colors"
+                                    onClick={() => openDetail(campaign.id)}>
 
-                                                {/* Progress */}
-                                                <div className="space-y-1">
-                                                    <ProgressBar sent={campaign.sentCount} failed={campaign.failedCount} total={total} />
-                                                    <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                                                        <span className="flex items-center gap-1">
-                                                            <Users className="w-3 h-3" />
-                                                            {total} penerima
-                                                        </span>
-                                                        {total > 0 && (
-                                                            <>
-                                                                <span className="text-emerald-400">{campaign.sentCount} terkirim</span>
-                                                                {campaign.failedCount > 0 && <span className="text-red-400">{campaign.failedCount} gagal</span>}
-                                                                {campaign.status === 'IN_PROGRESS' && <span className="text-blue-400">{total - done} pending</span>}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Actions */}
-                                            <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-                                                {campaign.status === 'DRAFT' && (
-                                                    <Button size="sm" variant="outline" className="h-7 gap-1.5 text-xs text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
-                                                        onClick={() => handleStart(campaign.id)}>
-                                                        <Play className="w-3 h-3" /> Kirim
-                                                    </Button>
-                                                )}
-                                                {(campaign.status === 'DRAFT' || campaign.status === 'IN_PROGRESS') && (
-                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
-                                                        onClick={() => handleCancel(campaign.id)}>
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                )}
-                                                {campaign.status !== 'IN_PROGRESS' && (
-                                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
-                                                        onClick={() => setDeleteTarget(campaign.id)}>
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </Button>
-                                                )}
-                                            </div>
+                                    {/* Left: name + meta */}
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 mb-0.5">
+                                            <span className="text-sm font-medium text-foreground truncate">{campaign.name}</span>
+                                            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full border shrink-0 ${cfg.color}`}>
+                                                {cfg.label}
+                                            </span>
+                                            {campaign.status === 'IN_PROGRESS' && <Loader2 className="w-3 h-3 animate-spin text-blue-400 shrink-0" />}
                                         </div>
+                                        <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                                            <span className="font-mono truncate max-w-[140px]">{campaign.templateName}</span>
+                                            <span>·</span>
+                                            <span>{total} penerima</span>
+                                            {total > 0 && campaign.sentCount > 0 && <span className="text-emerald-400">{campaign.sentCount} terkirim</span>}
+                                            {campaign.failedCount > 0 && <span className="text-red-400">{campaign.failedCount} gagal</span>}
+                                            {campaign.status === 'IN_PROGRESS' && <span className="text-blue-400">{total - done} pending</span>}
+                                        </div>
+                                    </div>
 
-                                        <p className="text-[11px] text-muted-foreground/60 mt-2">
-                                            Dibuat {fmtDate(campaign.createdAt)}
-                                            {campaign.startedAt && ` · Mulai ${fmtDate(campaign.startedAt)}`}
-                                            {campaign.completedAt && ` · Selesai ${fmtDate(campaign.completedAt)}`}
-                                        </p>
-                                    </CardContent>
-                                </Card>
+                                    {/* Right: actions */}
+                                    <div className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                                        {campaign.status === 'DRAFT' && (
+                                            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/10"
+                                                onClick={() => handleStart(campaign.id)}>
+                                                <Play className="w-3 h-3" /> Kirim
+                                            </Button>
+                                        )}
+                                        {(campaign.status === 'DRAFT' || campaign.status === 'IN_PROGRESS') && (
+                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                                                onClick={() => handleCancel(campaign.id)}>
+                                                <X className="w-3.5 h-3.5" />
+                                            </Button>
+                                        )}
+                                        {campaign.status !== 'IN_PROGRESS' && (
+                                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-muted-foreground hover:text-red-400"
+                                                onClick={() => setDeleteTarget(campaign.id)}>
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
                             );
                         })
                     )}
