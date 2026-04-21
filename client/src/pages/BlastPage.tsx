@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Megaphone, Plus, Search, Play, X, Trash2, CheckCircle2, AlertCircle, Clock, Loader2, Users, ChevronDown, RefreshCw } from 'lucide-react';
+import { Megaphone, Plus, Search, Play, X, Trash2, CheckCircle2, AlertCircle, Clock, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
