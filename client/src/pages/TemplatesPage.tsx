@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
@@ -51,6 +52,13 @@ export function TemplatesPage() {
     const [buttons, setButtons] = useState<TemplateButton[]>([]);
     const [syncing, setSyncing] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const handleCopy = (id: string, text: string) => {
+        navigator.clipboard.writeText(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+    };
 
     const load = async () => {
         try { const res = await fetch(API); setTemplates(await res.json()); }
@@ -192,15 +200,30 @@ export function TemplatesPage() {
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => navigator.clipboard.writeText(t.bodyText)}>
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
-                                                    <Pencil className="w-3.5 h-3.5" />
-                                                </Button>
-                                                <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => handleDelete(t.id)}>
-                                                    <Trash2 className="w-3.5 h-3.5" />
-                                                </Button>
+                                                <Tooltip open={copiedId === t.id ? true : undefined}>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleCopy(t.id, t.bodyText)}>
+                                                            <Copy className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>{copiedId === t.id ? 'Berhasil di salin!' : 'Salin Teks'}</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(t)}>
+                                                            <Pencil className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Edit template</TooltipContent>
+                                                </Tooltip>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <Button variant="ghost" size="icon" className="h-7 w-7 hover:text-destructive" onClick={() => handleDelete(t.id)}>
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>Hapus template</TooltipContent>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                         {t.headerText && <p className="text-xs font-medium text-foreground/80 mb-1">{t.headerText}</p>}
