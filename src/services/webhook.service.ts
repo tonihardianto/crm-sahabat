@@ -336,6 +336,19 @@ export async function processIncomingMessage(payload: WAWebhookPayload): Promise
                                 data: { readAt: new Date(parseInt(status.timestamp) * 1000) },
                             });
                             emitMessageStatus(msg.ticketId, status.id, "read");
+                        } else if (status.status === "failed") {
+                            const errors = (status as unknown as { errors?: { code: number; title: string }[] }).errors;
+                            const errDetail = errors?.[0] ? `${errors[0].code}: ${errors[0].title}` : "unknown";
+                            console.error(`[Webhook] Message delivery FAILED for wamid ${status.id} to ${status.recipient_id}: ${errDetail}`);
+                            try {
+                                const msg = await prisma.message.update({
+                                    where: { wamid: status.id },
+                                    data: { deliveryFailed: true } as never,
+                                });
+                                emitMessageStatus(msg.ticketId, status.id, "failed");
+                            } catch {
+                                // wamid mungkin tidak ada di DB (pesan lama) — abaikan
+                            }
                         }
                     } catch {
                         // wamid may not exist yet (race condition) — ignore
