@@ -51,12 +51,8 @@ export async function createMessage(
             replyWamid = quoted?.wamid ?? undefined;
         }
 
-        try {
-            const result = await sendTextMessage(recipientPhone, data.body, replyWamid);
-            wamid = result.wamid;
-        } catch (error) {
-            console.error("[Message] Failed to send via WhatsApp:", error);
-        }
+        const result = await sendTextMessage(recipientPhone, data.body, replyWamid);
+        wamid = result.wamid;
     }
 
     const message = await prisma.message.create({
@@ -117,18 +113,14 @@ export async function createMediaMessage(
     const recipientPhone = ticket.contact.waId || ticket.contact.phoneNumber;
     const waType = data.type.toLowerCase() as "image" | "document" | "audio" | "video";
 
-    try {
-        const result = await sendMediaMessage(
-            recipientPhone,
-            waType,
-            data.mediaUrl,
-            data.body || undefined,
-            data.filename
-        );
-        wamid = result.wamid;
-    } catch (error) {
-        console.error("[Message] Failed to send media via WhatsApp:", error);
-    }
+    const result = await sendMediaMessage(
+        recipientPhone,
+        waType,
+        data.mediaUrl,
+        data.body || undefined,
+        data.filename
+    );
+    wamid = result.wamid;
 
     const message = await prisma.message.create({
         data: {

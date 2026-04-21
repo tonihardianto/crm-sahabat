@@ -46,7 +46,9 @@ export async function sendTextMessage(to: string, body: string, replyWamid?: str
     if (!response.ok) {
         const error = await response.json();
         console.error("[WhatsApp API] Send failed:", JSON.stringify(error, null, 2));
-        throw new Error(`WhatsApp API error: ${response.status} ${response.statusText}`);
+        const metaMsg = (error as { error?: { message?: string } })?.error?.message
+            ?? JSON.stringify(error);
+        throw new Error(`WhatsApp API error: ${metaMsg}`);
     }
 
     const result = (await response.json()) as { messages?: { id: string }[] };

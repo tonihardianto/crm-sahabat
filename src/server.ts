@@ -13,6 +13,6 @@ const server = http.createServer(app);
 initSocket(server);
 
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📡 Webhook endpoint: http://localhost:${PORT}/webhook`);
+    console.log(`[0] Server running on http://localhost:${PORT}`);
+    console.log(`[1] Webhook endpoint: http://localhost:${PORT}/webhook`);
 });
