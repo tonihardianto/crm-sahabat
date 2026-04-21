@@ -357,8 +357,8 @@ export function BlastPage() {
             </div>
 
             {/* Campaign List */}
-            <ScrollArea className="flex-1 overflow-y-auto">
-                <div className="p-4 md:p-8 space-y-3 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
+                <div className="p-4 md:p-8 space-y-3">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -451,7 +451,7 @@ export function BlastPage() {
                         })
                     )}
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* ── Create Campaign Dialog ── */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
