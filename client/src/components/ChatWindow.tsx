@@ -13,6 +13,7 @@ import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } fro
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAppSettings } from '@/context/AppSettingsContext';
+import { toast } from 'sonner';
 
 
 interface ChatWindowProps {
@@ -237,6 +238,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
             onMessageSent();
         } catch (err) {
             console.error('Failed to send message:', err);
+            toast.error(err instanceof Error ? err.message : 'Gagal mengirim pesan');
         } finally {
             setSending(false);
         }

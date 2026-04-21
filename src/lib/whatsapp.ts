@@ -327,7 +327,9 @@ export async function sendMediaMessage(
     if (!response.ok) {
         const error = await response.json();
         console.error("[WhatsApp API] Media send failed:", JSON.stringify(error, null, 2));
-        throw new Error(`WhatsApp API error: ${response.status} ${response.statusText}`);
+        const metaMsg = (error as { error?: { message?: string } })?.error?.message
+            ?? JSON.stringify(error);
+        throw new Error(`WhatsApp API error: ${metaMsg}`);
     }
 
     const result = (await response.json()) as { messages?: { id: string }[] };

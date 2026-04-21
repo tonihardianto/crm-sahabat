@@ -93,7 +93,10 @@ export async function sendMessage(
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ body, direction, sentById, replyToId }),
     });
-    if (!res.ok) throw new Error('Failed to send message');
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? 'Failed to send message');
+    }
     return res.json();
 }
 
@@ -115,7 +118,10 @@ export async function sendMediaMessage(
         method: 'POST',
         body: form,
     });
-    if (!res.ok) throw new Error('Failed to send media message');
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error((data as { error?: string }).error ?? 'Failed to send media message');
+    }
     return res.json();
 }
 
