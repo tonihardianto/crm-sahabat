@@ -87,7 +87,7 @@ export function TicketsPage() {
     );
 
     const handleMessageStatus = useCallback(
-        (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' }) => {
+        (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' | 'failed' }) => {
             setActiveTicket(prev => {
                 if (!prev || prev.id !== data.ticketId) return prev;
                 return {
@@ -96,6 +96,7 @@ export function TicketsPage() {
                         if (m.wamid !== data.wamid) return m;
                         if (data.status === 'delivered') return { ...m, deliveredAt: new Date().toISOString() };
                         if (data.status === 'read') return { ...m, readAt: new Date().toISOString() };
+                        if (data.status === 'failed') return { ...m, deliveryFailed: true };
                         return m;
                     }),
                 };

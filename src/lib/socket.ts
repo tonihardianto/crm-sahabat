@@ -125,7 +125,7 @@ export function emitNewTicket(ticket: Record<string, unknown>): void {
 /**
  * Emit event: status pesan diperbarui (delivered / read)
  */
-export function emitMessageStatus(ticketId: string, wamid: string, status: "delivered" | "read"): void {
+export function emitMessageStatus(ticketId: string, wamid: string, status: "delivered" | "read" | "failed"): void {
     getIO().emit("message:status", { ticketId, wamid, status });
 }
 

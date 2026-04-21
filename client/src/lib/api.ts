@@ -64,6 +64,7 @@ export interface Message {
     editedAt: string | null;
     deliveredAt: string | null;
     readAt: string | null;
+    deliveryFailed: boolean;
     timestamp: string;
     createdAt: string;
     sentBy: { id: string; name: string } | null;

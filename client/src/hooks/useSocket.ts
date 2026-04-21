@@ -6,7 +6,7 @@ interface UseSocketOptions {
     onNewMessage?: (data: { ticketId: string; message: Message }) => void;
     onNewTicket?: (data: { ticket: Ticket }) => void;
     onMessageEdited?: (data: { ticketId: string; message: Message }) => void;
-    onMessageStatus?: (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' }) => void;
+    onMessageStatus?: (data: { ticketId: string; wamid: string; status: 'delivered' | 'read' | 'failed' }) => void;
     onTicketUpdated?: (data: { ticket: Ticket }) => void;
 }
 

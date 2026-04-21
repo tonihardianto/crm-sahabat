@@ -71,6 +71,7 @@ function getFileExtension(filename: string): string {
 
 function MessageTicks({ msg }: { msg: import('@/lib/api').Message }) {
     if (msg.direction !== 'OUTBOUND' || !msg.wamid) return null;
+    if (msg.deliveryFailed) return <span title="Gagal terkirim"><CircleAlertIcon className="w-3.5 h-3.5 text-red-400 shrink-0" /></span>;
     if (msg.readAt) return <CheckCheck className="w-3.5 h-3.5 text-blue-300 shrink-0" />;
     if (msg.deliveredAt) return <CheckCheck className="w-3.5 h-3.5 text-blue-200/50 shrink-0" />;
     return <Check className="w-3.5 h-3.5 text-blue-200/50 shrink-0" />;

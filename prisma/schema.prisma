@@ -203,6 +203,7 @@ model Message {
   timestamp   DateTime         @default(now()) // Waktu pesan dikirim/diterima
   deliveredAt DateTime?        @map("delivered_at")
   readAt      DateTime?        @map("read_at")
+  deliveryFailed Boolean       @default(false) @map("delivery_failed")
   createdAt   DateTime         @default(now())
 
   ticket  Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
