@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { StatsBar } from './StatsBar';
+// import { StatsBar } from './StatsBar';
 import { NewConversationDialog } from './NewConversationDialog';
 import { useAuth } from '@/context/AuthContext';
+import { useNotification } from '@/context/NotificationContext';
 
 interface TicketListProps {
     tickets: Ticket[];
@@ -71,6 +72,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
     const [search, setSearch] = useState('');
     const [showNewDialog, setShowNewDialog] = useState(false);
     const { user } = useAuth();
+    const { onlineCount } = useNotification();
     const isAdmin = user?.role === 'ADMIN';
 
     // Bulk selection state
@@ -134,7 +136,18 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
             {/* Header */}
             <div className="px-4 pt-4 pb-3 border-b border-border">
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-foreground">Pesan</h2>
+                    <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-semibold text-foreground">Pesan</h2>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 cursor-default">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                    <span className="text-[11px] font-medium text-emerald-400">{onlineCount}</span>
+                                </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">{onlineCount} agent online</TooltipContent>
+                        </Tooltip>
+                    </div>
                     <div className="flex items-center gap-1">
                         {(onBulkArchive || onBulkResolve || onBulkAssign || onBulkDelete) && (
                             <Tooltip>
@@ -179,7 +192,7 @@ export function TicketList({ tickets, activeTicketId, onSelectTicket, onNewTicke
             </div>
 
             {/* Stats */}
-            <StatsBar tickets={tickets} />
+            {/* <StatsBar tickets={tickets} /> */}
 
             {/* Select-all bar — shown when in select mode */}
             {selectMode && (

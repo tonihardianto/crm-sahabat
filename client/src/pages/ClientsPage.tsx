@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -45,6 +46,7 @@ export function ClientsPage() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modalOpen, setModalOpen] = useState(false);
+    const [deleteTarget, setDeleteTarget] = useState<ClientData | null>(null);
     const [editingClient, setEditingClient] = useState<ClientData | null>(null);
     const [form, setForm] = useState({ name: '', customerId: '', address: '', phone: '', picId: '', slaTier: 'BRONZE', status: 'ACTIVE' });
 
@@ -91,9 +93,9 @@ export function ClientsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Hapus client ini? Semua contact akan dihapus.')) return;
         try { await fetch(`${API}/${id}`, { method: 'DELETE', credentials: 'include' }); loadClients(); }
         catch (err) { console.error(err); }
+        finally { setDeleteTarget(null); }
     };
 
     const filtered = clients.filter((c) => {
@@ -210,7 +212,7 @@ export function ClientsPage() {
                                                 <Button variant="ghost" size="icon" onClick={() => openEdit(c)} className="h-8 w-8 text-muted-foreground hover:text-foreground">
                                                     <Pencil className="w-4 h-4" />
                                                 </Button>
-                                                <Button variant="ghost" size="icon" onClick={() => handleDelete(c.id)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
+                                                <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(c)} className="h-8 w-8 text-muted-foreground hover:text-destructive">
                                                     <Trash2 className="w-4 h-4" />
                                                 </Button>
                                             </div>
@@ -301,6 +303,27 @@ export function ClientsPage() {
                     </form>
                 </DialogContent>
             </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={!!deleteTarget} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Hapus Client</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Yakin ingin menghapus <span className="font-semibold text-foreground">{deleteTarget?.name}</span>? Semua contact akan ikut terhapus dan tindakan ini tidak dapat dibatalkan.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Batal</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => deleteTarget && handleDelete(deleteTarget.id)}
+                        >
+                            Hapus
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

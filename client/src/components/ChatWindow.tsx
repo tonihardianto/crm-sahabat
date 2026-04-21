@@ -162,6 +162,7 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
     const [clickupResult, setClickupResult] = useState<{ success: boolean; message: string } | null>(null);
     const [quickReplies, setQuickReplies] = useState<QuickReply[]>([]);
     const [qrActiveIndex, setQrActiveIndex] = useState(0);
+    const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
     const { user } = useAuth();
     const { chatBg, outboundBubbleColor, inboundBubbleColor } = useAppSettings();
     const isAdmin = user?.role === 'ADMIN';
@@ -576,9 +577,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                 <div className="px-1 py-1 rounded-xl rounded-bl-md bg-muted border border-border" style={inboundBubbleColor ? { backgroundColor: inboundBubbleColor } : undefined}>
                                                     {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="inbound" /></div>}
                                                     {(msg.type === 'IMAGE') && msg.mediaUrl ? (
-                                                        <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                        <button type="button" onClick={() => setImagePreviewUrl(msg.mediaUrl!)} className="block cursor-pointer">
                                                             <img src={msg.mediaUrl} alt="image" className="max-w-[440px] max-h-[240px] rounded-lg mb-1" />
-                                                        </a>
+                                                        </button>
                                                     ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
                                                         <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
                                                     ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
@@ -610,9 +611,9 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                                                     )}
                                                     {msg.replyTo && <div className="px-2 pt-1"><QuotedMessage replyTo={msg.replyTo} variant="outbound" /></div>}
                                                     {(msg.type === 'IMAGE') && msg.mediaUrl ? (
-                                                        <a href={msg.mediaUrl} target="_blank" rel="noreferrer">
+                                                        <button type="button" onClick={() => setImagePreviewUrl(msg.mediaUrl!)} className="block cursor-zoom-in">
                                                             <img src={msg.mediaUrl} alt="image" className="max-w-[240px] rounded-lg mb-1" />
-                                                        </a>
+                                                        </button>
                                                     ) : (msg.type === 'AUDIO') && msg.mediaUrl ? (
                                                         <audio controls src={msg.mediaUrl} className="max-w-[240px] mb-1" />
                                                     ) : (msg.type === 'VIDEO') && msg.mediaUrl ? (
@@ -1117,6 +1118,37 @@ export function ChatWindow({ ticket, onClaimTicket, onMessageSent, onBack, showC
                             )}
                         </div>
                     </div>
+                </div>
+            )}
+
+            {/* Image Lightbox */}
+            {imagePreviewUrl && (
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+                    onClick={() => setImagePreviewUrl(null)}
+                >
+                    <button
+                        type="button"
+                        onClick={() => setImagePreviewUrl(null)}
+                        className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    >
+                        <X className="w-5 h-5 text-white" />
+                    </button>
+                    <a
+                        href={imagePreviewUrl}
+                        download
+                        onClick={(e) => e.stopPropagation()}
+                        className="absolute top-4 right-16 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                        title="Download"
+                    >
+                        <Download className="w-5 h-5 text-white" />
+                    </a>
+                    <img
+                        src={imagePreviewUrl}
+                        alt="preview"
+                        className="max-w-[90vw] max-h-[90vh] rounded-xl shadow-2xl object-contain"
+                        onClick={(e) => e.stopPropagation()}
+                    />
                 </div>
             )}
         </div>

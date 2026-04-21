@@ -28,6 +28,7 @@ interface NotificationContextValue {
     requestPermission: () => Promise<void>;
     pushEnabled: boolean;
     togglePush: () => Promise<void>;
+    onlineCount: number;
 }
 
 const NotificationContext = createContext<NotificationContextValue>({
@@ -40,6 +41,7 @@ const NotificationContext = createContext<NotificationContextValue>({
     requestPermission: async () => {},
     pushEnabled: false,
     togglePush: async () => {},
+    onlineCount: 0,
 });
 
 // Shared AudioContext — created lazily on first user gesture
@@ -99,6 +101,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+    const [onlineCount, setOnlineCount] = useState(0);
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
         typeof Notification !== 'undefined' ? Notification.permission : 'default'
     );
@@ -385,6 +388,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
             }
         });
 
+        socket.on('users:online', ({ count }: { count: number }) => {
+            setOnlineCount(count);
+        });
+
         return () => {
             socket.off('connect', joinRoom);
             socket.disconnect();
@@ -392,7 +399,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [user?.userId]);
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission, pushEnabled, togglePush }}>
+        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission, pushEnabled, togglePush, onlineCount }}>
             {children}
         </NotificationContext.Provider>
     );

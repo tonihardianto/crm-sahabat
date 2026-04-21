@@ -4,6 +4,13 @@ import * as pushService from "../services/push.service";
 
 let io: SocketIOServer;
 
+// Track online users: userId -> Set of socketIds (handles multiple tabs)
+const onlineUsers = new Map<string, Set<string>>();
+
+function broadcastOnlineCount(): void {
+    io.emit("users:online", { count: onlineUsers.size });
+}
+
 export function initSocket(server: HTTPServer): SocketIOServer {
     io = new SocketIOServer(server, {
         cors: {
@@ -14,17 +21,30 @@ export function initSocket(server: HTTPServer): SocketIOServer {
 
     io.on("connection", (socket) => {
         console.log(`[Socket.io] Agent connected: ${socket.id}`);
+        let joinedUserId: string | null = null;
 
         // Each authenticated user joins their personal room for targeted notifications
         socket.on("user:join", (userId: string) => {
             if (typeof userId === "string" && userId.trim()) {
                 socket.join(`user:${userId}`);
-                console.log(`[Socket.io] User ${userId} joined personal room`);
+                joinedUserId = userId;
+                if (!onlineUsers.has(userId)) onlineUsers.set(userId, new Set());
+                onlineUsers.get(userId)!.add(socket.id);
+                broadcastOnlineCount();
+                console.log(`[Socket.io] User ${userId} joined personal room (online: ${onlineUsers.size})`);
             }
         });
 
         socket.on("disconnect", () => {
             console.log(`[Socket.io] Agent disconnected: ${socket.id}`);
+            if (joinedUserId) {
+                const sockets = onlineUsers.get(joinedUserId);
+                if (sockets) {
+                    sockets.delete(socket.id);
+                    if (sockets.size === 0) onlineUsers.delete(joinedUserId);
+                }
+                broadcastOnlineCount();
+            }
         });
     });
 
