@@ -21,12 +21,7 @@ export function TicketsPage() {
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const { user } = useAuth();
     const isMobile = useMediaQuery('(max-width: 767px)');
-    const { resetUnread } = useNotification();
-
-    // Reset unread badge whenever the tickets page is visible
-    useEffect(() => {
-        resetUnread();
-    }, [resetUnread]);
+    const { decrementUnread } = useNotification();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const loadTickets = useCallback(async () => {
@@ -53,13 +48,17 @@ export function TicketsPage() {
     const handleSelectTicket = useCallback((t: Ticket) => {
         loadTicketDetail(t.id);
         setMobileView('chat');
+        // Decrement sidebar badge if this ticket had unread messages
+        if ((t._count?.messages ?? 0) > 0) {
+            decrementUnread();
+        }
         // Mark as read instantly in local state so badge disappears immediately
         setTickets(prev => prev.map(tk =>
             tk.id === t.id ? { ...tk, _count: { messages: 0 } } : tk
         ));
         // Fire-and-forget API call to persist in DB
         markMessagesRead(t.id).catch(console.error);
-    }, [loadTicketDetail]);
+    }, [loadTicketDetail, decrementUnread]);
 
     const handleNewMessage = useCallback(
         (data: { ticketId: string }) => {

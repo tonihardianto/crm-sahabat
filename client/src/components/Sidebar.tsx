@@ -41,7 +41,7 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                             <div className="relative shrink-0">
                                 <Icon className="w-4 h-4" />
                                 {to === '/tickets' && unreadCount > 0 && (
-                                    <span className="absolute -top-1.5 -right-1.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-red-500 text-white text-[8px] font-bold px-0.5 leading-none">
+                                    <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-semibold px-1 leading-none">
                                         {unreadCount > 99 ? '99+' : unreadCount}
                                     </span>
                                 )}

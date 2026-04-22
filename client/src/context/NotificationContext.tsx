@@ -21,6 +21,7 @@ export interface NotificationItem {
 interface NotificationContextValue {
     unreadCount: number;
     resetUnread: () => void;
+    decrementUnread: () => void;
     notifications: NotificationItem[];
     clearNotifications: () => void;
     markAllRead: () => void;
@@ -34,6 +35,7 @@ interface NotificationContextValue {
 const NotificationContext = createContext<NotificationContextValue>({
     unreadCount: 0,
     resetUnread: () => {},
+    decrementUnread: () => {},
     notifications: [],
     clearNotifications: () => {},
     markAllRead: () => {},
@@ -229,6 +231,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setUnreadCount(0);
     }, []);
 
+    const decrementUnread = useCallback(() => {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+    }, []);
+
     const clearNotifications = useCallback(() => {
         setNotifications([]);
         setUnreadCount(0);
@@ -399,7 +405,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     }, [user?.userId]);
 
     return (
-        <NotificationContext.Provider value={{ unreadCount, resetUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission, pushEnabled, togglePush, onlineCount }}>
+        <NotificationContext.Provider value={{ unreadCount, resetUnread, decrementUnread, notifications, clearNotifications, markAllRead, notifyPermission, requestPermission, pushEnabled, togglePush, onlineCount }}>
             {children}
         </NotificationContext.Provider>
     );
