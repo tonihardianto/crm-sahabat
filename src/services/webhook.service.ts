@@ -274,6 +274,12 @@ async function saveMessage(ticketId: string, waMessage: WAMessage) {
         },
     });
 
+    // Update updatedAt tiket agar naik ke atas di ticket list
+    await prisma.ticket.update({
+        where: { id: ticketId },
+        data: { updatedAt: new Date() },
+    });
+
     return message;
 }
 
