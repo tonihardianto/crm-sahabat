@@ -104,6 +104,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     const [unreadCount, setUnreadCount] = useState(0);
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [onlineCount, setOnlineCount] = useState(0);
+
+    // Inisialisasi unreadCount dari server saat user login / reload
+    useEffect(() => {
+        if (!user) { setUnreadCount(0); return; }
+        fetch('/api/tickets', { credentials: 'include' })
+            .then(r => r.ok ? r.json() : [])
+            .then((tickets: { _count?: { messages?: number } }[]) => {
+                const count = tickets.filter(t => (t._count?.messages ?? 0) > 0).length;
+                setUnreadCount(count);
+            })
+            .catch(() => {});
+    }, [user]);
     const [notifyPermission, setNotifyPermission] = useState<NotificationPermission>(
         typeof Notification !== 'undefined' ? Notification.permission : 'default'
     );
