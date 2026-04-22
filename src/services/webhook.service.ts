@@ -25,6 +25,14 @@ interface WAMessage {
     video?: { id: string; mime_type: string; caption?: string };
     document?: { id: string; mime_type: string; filename?: string; caption?: string };
     audio?: { id: string; mime_type: string };
+    // Balasan klik tombol Quick Reply dari template
+    button?: { payload: string; text: string };
+    // Balasan interactive (list reply, dll)
+    interactive?: {
+        type: string;
+        button_reply?: { id: string; title: string };
+        list_reply?: { id: string; title: string; description?: string };
+    };
     context?: { from: string; id: string }; // quoted message wamid
 }
 
@@ -297,6 +305,18 @@ function extractMessageBody(waMessage: WAMessage): string {
         case "document":
             return waMessage.document?.caption || "";
         case "audio":
+            return "";
+        // Balasan klik tombol Quick Reply dari template
+        case "button":
+            return waMessage.button?.text || waMessage.button?.payload || "";
+        // Balasan interactive (button reply / list reply)
+        case "interactive":
+            if (waMessage.interactive?.button_reply) {
+                return waMessage.interactive.button_reply.title;
+            }
+            if (waMessage.interactive?.list_reply) {
+                return waMessage.interactive.list_reply.title;
+            }
             return "";
         default:
             return "";
