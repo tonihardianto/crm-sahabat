@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Megaphone, Plus, Search, Play, X, Trash2, CheckCircle2, AlertCircle, Clock, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import * as XLSX from 'xlsx';
+import { Megaphone, Plus, Search, Play, X, Trash2, CheckCircle2, AlertCircle, Clock, Loader2, ChevronDown, RefreshCw, FileSpreadsheet, Upload, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -38,6 +39,13 @@ interface Contact {
     client: { id: string; name: string; customerId: string };
 }
 
+interface ExcelRecipient {
+    phoneNumber: string;
+    contactName: string;
+    /** raw row data from Excel, keyed by column header */
+    rowData: Record<string, string>;
+}
+
 // ── Helpers ──────────────────────────────────────────────────
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
@@ -74,6 +82,7 @@ function ProgressBar({ sent, failed, total }: { sent: number; failed: number; to
 
 // ── Main Component ───────────────────────────────────────────
 
+/** Deteksi semua variabel {{N}} (bernomor) dari body template */
 function detectVars(bodyText: string): number[] {
     const indices = Array.from(bodyText.matchAll(/\{\{(\d+)\}\}/g)).map(m => parseInt(m[1]));
     return [...new Set(indices)].sort((a, b) => a - b);
@@ -100,6 +109,18 @@ export function BlastPage() {
     const [formStep, setFormStep] = useState<1 | 2 | 3>(1);
     const [templateVars, setTemplateVars] = useState<Record<number, string>>({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Mode penerima: 'contacts' = pilih dari DB, 'excel' = import dari Excel
+    const [recipientMode, setRecipientMode] = useState<'contacts' | 'excel'>('contacts');
+
+    // Excel import state
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [excelRecipients, setExcelRecipients] = useState<ExcelRecipient[]>([]);
+    const [excelColumns, setExcelColumns] = useState<string[]>([]);
+    const [excelPhoneCol, setExcelPhoneCol] = useState('');
+    const [excelNameCol, setExcelNameCol] = useState('');
+    /** Mapping: nomor variabel template (1,2,...) -> nama kolom Excel */
+    const [varColMap, setVarColMap] = useState<Record<number, string>>({});
 
     // Detail dialog
     const [detailCampaign, setDetailCampaign] = useState<BlastCampaign | null>(null);
@@ -142,6 +163,12 @@ export function BlastPage() {
         setSelectedContactIds(new Set());
         setFormStep(1);
         setTemplateVars({});
+        setRecipientMode('contacts');
+        setExcelRecipients([]);
+        setExcelColumns([]);
+        setExcelPhoneCol('');
+        setExcelNameCol('');
+        setVarColMap({});
         setCreateOpen(true);
 
         if (templates.length === 0 || contacts.length === 0) {
@@ -192,30 +219,116 @@ export function BlastPage() {
         const vars: Record<number, string> = {};
         detectVars(t.bodyText).forEach(i => { vars[i] = ''; });
         setTemplateVars(vars);
+        setVarColMap({});
+    };
+
+    /** Parse file Excel/CSV yang di-upload */
+    const handleExcelUpload = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target!.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+                if (!rows.length) { toast.error('File kosong atau format tidak valid'); return; }
+                const cols = Object.keys(rows[0]).map(String);
+                setExcelColumns(cols);
+                // Auto-detect kolom telepon & nama
+                const phoneGuess = cols.find(c => /nomor|phone|hp|wa|whatsapp|tel/i.test(c)) ?? '';
+                const nameGuess = cols.find(c => /nama|name/i.test(c)) ?? '';
+                setExcelPhoneCol(phoneGuess);
+                setExcelNameCol(nameGuess);
+                // Simpan rows sebagai ExcelRecipient sementara (akan di-finalize saat submit)
+                const parsed: ExcelRecipient[] = rows.map(row => ({
+                    phoneNumber: String(row[phoneGuess] ?? ''),
+                    contactName: String(row[nameGuess] ?? ''),
+                    rowData: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, String(v)])),
+                }));
+                setExcelRecipients(parsed);
+                toast.success(`${rows.length} baris berhasil dibaca dari Excel`);
+            } catch {
+                toast.error('Gagal membaca file Excel');
+            }
+        };
+        reader.readAsArrayBuffer(file);
     };
 
     const handleCreate = async () => {
-        if (!formName.trim() || !selectedTemplate || selectedContactIds.size === 0) return;
-        setSubmitting(true);
-        const paramEntries = Object.entries(templateVars).sort(([a], [b]) => parseInt(a) - parseInt(b));
-        const components: unknown[] = paramEntries.length > 0
-            ? [{ type: 'body', parameters: paramEntries.map(([, val]) => ({ type: 'text', text: val })) }]
-            : [];
-        try {
-            await createBlastCampaign({
-                name: formName.trim(),
-                templateName: selectedTemplate.name,
-                languageCode: selectedTemplate.language || 'id',
-                components,
-                contactIds: Array.from(selectedContactIds),
-            });
-            toast.success('Campaign berhasil dibuat sebagai Draft');
-            setCreateOpen(false);
-            load();
-        } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Gagal membuat campaign');
-        } finally {
-            setSubmitting(false);
+        if (!formName.trim() || !selectedTemplate) return;
+
+        if (recipientMode === 'contacts') {
+            if (selectedContactIds.size === 0) return;
+            setSubmitting(true);
+            const paramEntries = Object.entries(templateVars).sort(([a], [b]) => parseInt(a) - parseInt(b));
+            const components: unknown[] = paramEntries.length > 0
+                ? [{ type: 'body', parameters: paramEntries.map(([, val]) => ({ type: 'text', text: val })) }]
+                : [];
+            try {
+                await createBlastCampaign({
+                    name: formName.trim(),
+                    templateName: selectedTemplate.name,
+                    languageCode: selectedTemplate.language || 'id',
+                    components,
+                    contactIds: Array.from(selectedContactIds),
+                });
+                toast.success('Campaign berhasil dibuat sebagai Draft');
+                setCreateOpen(false);
+                load();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Gagal membuat campaign');
+            } finally {
+                setSubmitting(false);
+            }
+        } else {
+            // Mode Excel
+            if (!excelPhoneCol || excelRecipients.length === 0) return;
+            setSubmitting(true);
+            // Normalize nomor telepon ke format internasional (62xxx)
+            const normalizePhone = (raw: string) => {
+                const digits = raw.replace(/\D/g, '');
+                if (digits.startsWith('0')) return '62' + digits.slice(1);
+                if (digits.startsWith('62')) return digits;
+                return digits;
+            };
+            // Hitung per-recipient components berdasarkan varColMap
+            const varIndices = detectVars(selectedTemplate.bodyText);
+            const finalRecipients = excelRecipients
+                .map(r => {
+                    const phone = normalizePhone(r.rowData[excelPhoneCol] ?? '');
+                    const name = excelNameCol ? (r.rowData[excelNameCol] ?? '') : '';
+                    // Buat components per-penerima jika ada variabel yang di-mapping ke kolom
+                    const params = varIndices.map(idx => {
+                        const col = varColMap[idx];
+                        return { type: 'text', text: col ? (r.rowData[col] ?? '') : '' };
+                    });
+                    const perRecipientComponents: unknown[] = varIndices.length > 0
+                        ? [{ type: 'body', parameters: params }]
+                        : [];
+                    return { phoneNumber: phone, contactName: name, components: perRecipientComponents };
+                })
+                .filter(r => r.phoneNumber.length >= 8);
+
+            if (finalRecipients.length === 0) {
+                toast.error('Tidak ada nomor telepon valid ditemukan di kolom yang dipilih');
+                setSubmitting(false);
+                return;
+            }
+            try {
+                await createBlastCampaign({
+                    name: formName.trim(),
+                    templateName: selectedTemplate.name,
+                    languageCode: selectedTemplate.language || 'id',
+                    excelRecipients: finalRecipients,
+                });
+                toast.success(`Campaign berhasil dibuat dengan ${finalRecipients.length} penerima dari Excel`);
+                setCreateOpen(false);
+                load();
+            } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Gagal membuat campaign');
+            } finally {
+                setSubmitting(false);
+            }
         }
     };
 
@@ -276,6 +389,8 @@ export function BlastPage() {
 
     const templateVarIndices = selectedTemplate ? detectVars(selectedTemplate.bodyText) : [];
     const hasVars = templateVarIndices.length > 0;
+    // Pada mode Excel, step 3 = mapping kolom -> variabel (selalu tampil jika ada variabel)
+    // Pada mode contacts, step 3 = isi nilai variabel (sama untuk semua)
     const totalSteps = hasVars ? 3 : 2;
 
     const filteredCampaigns = campaigns.filter(c =>
@@ -512,83 +627,247 @@ export function BlastPage() {
                                 )}
                             </div>
                         ) : formStep === 2 ? (
-                            <div className="p-6 space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-sm font-medium text-foreground">
-                                        Pilih Kontak <span className="text-muted-foreground font-normal">({selectedContactIds.size} dipilih)</span>
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <button onClick={selectAll} className="text-xs text-blue-400 hover:underline">Pilih semua</button>
-                                        <span className="text-muted-foreground">·</span>
-                                        <button onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Hapus pilihan</button>
-                                    </div>
+                            <div className="p-6 space-y-4">
+                                {/* Mode toggle */}
+                                <div className="flex rounded-lg overflow-hidden border border-border">
+                                    <button
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors ${
+                                            recipientMode === 'contacts' ? 'bg-orange-500/15 text-orange-400' : 'text-muted-foreground hover:bg-muted/50'
+                                        }`}
+                                        onClick={() => setRecipientMode('contacts')}>
+                                        <Search className="w-3.5 h-3.5" /> Pilih dari Kontak
+                                    </button>
+                                    <button
+                                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-colors border-l border-border ${
+                                            recipientMode === 'excel' ? 'bg-orange-500/15 text-orange-400' : 'text-muted-foreground hover:bg-muted/50'
+                                        }`}
+                                        onClick={() => setRecipientMode('excel')}>
+                                        <FileSpreadsheet className="w-3.5 h-3.5" /> Import dari Excel
+                                    </button>
                                 </div>
-                                <Input value={contactSearch} onChange={e => setContactSearch(e.target.value)}
-                                    placeholder="Cari nama, nomor, atau klien..." />
-                                <ScrollArea className="h-72 border border-border rounded-lg">
-                                    {filteredContacts.length === 0 ? (
-                                        <p className="text-sm text-muted-foreground p-4 text-center">Tidak ada kontak</p>
-                                    ) : filteredContacts.map(c => (
-                                        <div key={c.id}
-                                            onClick={() => toggleContact(c.id)}
-                                            className={`flex items-center gap-3 p-3 cursor-pointer border-b border-border last:border-b-0 transition-colors ${
-                                                selectedContactIds.has(c.id) ? 'bg-orange-500/10' : 'hover:bg-muted/50'
-                                            }`}>
-                                            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                                                selectedContactIds.has(c.id) ? 'bg-orange-500 border-orange-500' : 'border-border'
-                                            }`}>
-                                                {selectedContactIds.has(c.id) && (
-                                                    <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 12 12">
-                                                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                                    </svg>
-                                                )}
-                                            </div>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-medium text-foreground truncate">{c.name}</span>
-                                                    {c.position && <span className="text-xs text-muted-foreground truncate">· {c.position}</span>}
-                                                </div>
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <span>{c.phoneNumber}</span>
-                                                    <span>·</span>
-                                                    <span className="truncate">{c.client.name}</span>
-                                                </div>
+
+                                {recipientMode === 'contacts' ? (
+                                    <>
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-sm font-medium text-foreground">
+                                                Pilih Kontak <span className="text-muted-foreground font-normal">({selectedContactIds.size} dipilih)</span>
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <button onClick={selectAll} className="text-xs text-blue-400 hover:underline">Pilih semua</button>
+                                                <span className="text-muted-foreground">·</span>
+                                                <button onClick={clearAll} className="text-xs text-muted-foreground hover:underline">Hapus pilihan</button>
                                             </div>
                                         </div>
-                                    ))}
-                                </ScrollArea>
+                                        <Input value={contactSearch} onChange={e => setContactSearch(e.target.value)}
+                                            placeholder="Cari nama, nomor, atau klien..." />
+                                        <ScrollArea className="h-64 border border-border rounded-lg">
+                                            {filteredContacts.length === 0 ? (
+                                                <p className="text-sm text-muted-foreground p-4 text-center">Tidak ada kontak</p>
+                                            ) : filteredContacts.map(c => (
+                                                <div key={c.id}
+                                                    onClick={() => toggleContact(c.id)}
+                                                    className={`flex items-center gap-3 p-3 cursor-pointer border-b border-border last:border-b-0 transition-colors ${
+                                                        selectedContactIds.has(c.id) ? 'bg-orange-500/10' : 'hover:bg-muted/50'
+                                                    }`}>
+                                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                                                        selectedContactIds.has(c.id) ? 'bg-orange-500 border-orange-500' : 'border-border'
+                                                    }`}>
+                                                        {selectedContactIds.has(c.id) && (
+                                                            <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 12 12">
+                                                                <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        )}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-medium text-foreground truncate">{c.name}</span>
+                                                            {c.position && <span className="text-xs text-muted-foreground truncate">· {c.position}</span>}
+                                                        </div>
+                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                            <span>{c.phoneNumber}</span>
+                                                            <span>·</span>
+                                                            <span className="truncate">{c.client.name}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </ScrollArea>
+                                    </>
+                                ) : (
+                                    /* ── Excel Import Panel ── */
+                                    <div className="space-y-4">
+                                        {/* Upload zone */}
+                                        <div
+                                            className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-orange-500/50 hover:bg-orange-500/5 transition-colors"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            onDragOver={e => e.preventDefault()}
+                                            onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleExcelUpload(f); }}>
+                                            <input
+                                                ref={fileInputRef}
+                                                type="file"
+                                                accept=".xlsx,.xls,.csv"
+                                                className="hidden"
+                                                onChange={e => { const f = e.target.files?.[0]; if (f) handleExcelUpload(f); }}
+                                            />
+                                            <Upload className="w-8 h-8 text-muted-foreground/50 mx-auto mb-2" />
+                                            <p className="text-sm text-muted-foreground">Klik atau drag & drop file Excel/CSV</p>
+                                            <p className="text-xs text-muted-foreground/60 mt-1">.xlsx, .xls, .csv</p>
+                                        </div>
+
+                                        {/* Format hint */}
+                                        <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20 text-xs text-blue-300">
+                                            <p className="font-semibold mb-1">Format Excel yang disarankan:</p>
+                                            <p>Baris pertama = header kolom (contoh: <code className="font-mono">nama</code>, <code className="font-mono">nomor</code>, <code className="font-mono">kode</code>)</p>
+                                            <p className="mt-0.5">Kolom nomor akan dikonversi otomatis ke format internasional (62xxx).</p>
+                                        </div>
+
+                                        {excelColumns.length > 0 && (
+                                            <div className="space-y-3">
+                                                <p className="text-sm font-medium text-foreground">
+                                                    {excelRecipients.length} baris ditemukan · Kolom tersedia: <span className="font-mono text-orange-400">{excelColumns.join(', ')}</span>
+                                                </p>
+                                                {/* Map columns */}
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="text-xs text-muted-foreground block mb-1">Kolom Nomor HP <span className="text-red-400">*</span></label>
+                                                        <select
+                                                            value={excelPhoneCol}
+                                                            onChange={e => setExcelPhoneCol(e.target.value)}
+                                                            className="w-full text-sm rounded-md border border-border bg-background px-3 py-1.5 text-foreground">
+                                                            <option value="">— pilih kolom —</option>
+                                                            {excelColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-xs text-muted-foreground block mb-1">Kolom Nama (opsional)</label>
+                                                        <select
+                                                            value={excelNameCol}
+                                                            onChange={e => setExcelNameCol(e.target.value)}
+                                                            className="w-full text-sm rounded-md border border-border bg-background px-3 py-1.5 text-foreground">
+                                                            <option value="">— tidak ada —</option>
+                                                            {excelColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                {/* Preview 3 rows */}
+                                                {excelPhoneCol && (
+                                                    <div className="rounded-lg border border-border overflow-hidden text-xs">
+                                                        <table className="w-full">
+                                                            <thead className="bg-muted/50">
+                                                                <tr>
+                                                                    {excelColumns.map(c => (
+                                                                        <th key={c} className="px-3 py-1.5 text-left text-muted-foreground font-medium">{c}</th>
+                                                                    ))}
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                {excelRecipients.slice(0, 3).map((r, i) => (
+                                                                    <tr key={i} className="border-t border-border">
+                                                                        {excelColumns.map(c => (
+                                                                            <td key={c} className="px-3 py-1.5 text-foreground">{r.rowData[c]}</td>
+                                                                        ))}
+                                                                    </tr>
+                                                                ))}
+                                                            </tbody>
+                                                        </table>
+                                                        {excelRecipients.length > 3 && (
+                                                            <p className="text-center text-muted-foreground py-1.5 border-t border-border">+{excelRecipients.length - 3} baris lainnya</p>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ) : (
+                            /* Step 3 */
                             <div className="p-6 space-y-4">
-                                <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
-                                    Variabel ini berlaku sama untuk <span className="font-semibold">semua penerima</span>. Pastikan nilainya sesuai sebelum mengirim.
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-foreground block mb-2">Isi Variabel</label>
-                                    <div className="space-y-2.5">
-                                        {templateVarIndices.map(idx => (
-                                            <div key={idx} className="flex items-center gap-3">
-                                                <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
-                                                <Input
-                                                    value={templateVars[idx] ?? ''}
-                                                    onChange={e => setTemplateVars(prev => ({ ...prev, [idx]: e.target.value }))}
-                                                    placeholder={`Nilai untuk {{${idx}}}`}
-                                                    className="flex-1"
-                                                />
+                                {recipientMode === 'contacts' ? (
+                                    <>
+                                        <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
+                                            Variabel ini berlaku sama untuk <span className="font-semibold">semua penerima</span>. Pastikan nilainya sesuai sebelum mengirim.
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium text-foreground block mb-2">Isi Variabel</label>
+                                            <div className="space-y-2.5">
+                                                {templateVarIndices.map(idx => (
+                                                    <div key={idx} className="flex items-center gap-3">
+                                                        <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
+                                                        <Input
+                                                            value={templateVars[idx] ?? ''}
+                                                            onChange={e => setTemplateVars(prev => ({ ...prev, [idx]: e.target.value }))}
+                                                            placeholder={`Nilai untuk {{${idx}}}`}
+                                                            className="flex-1"
+                                                        />
+                                                    </div>
+                                                ))}
                                             </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                {selectedTemplate && (
-                                    <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                                        <p className="text-[10px] text-blue-300/70 mb-1.5">Preview pesan:</p>
-                                        <p className="text-xs text-foreground whitespace-pre-wrap">
-                                            {templateVarIndices.reduce(
-                                                (text, idx) => text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), templateVars[idx] || `[var ${idx}]`),
-                                                selectedTemplate.bodyText
-                                            )}
-                                        </p>
-                                    </div>
+                                        </div>
+                                        {selectedTemplate && (
+                                            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                                <p className="text-[10px] text-blue-300/70 mb-1.5">Preview pesan:</p>
+                                                <p className="text-xs text-foreground whitespace-pre-wrap">
+                                                    {templateVarIndices.reduce(
+                                                        (text, idx) => text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), templateVars[idx] || `[var ${idx}]`),
+                                                        selectedTemplate.bodyText
+                                                    )}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    /* Mode Excel: mapping kolom Excel ke variabel template */
+                                    <>
+                                        <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
+                                            Setiap penerima akan mendapat nilai variabel yang berbeda sesuai data di Excel.
+                                        </div>
+                                        <div>
+                                            <label className="text-sm font-medium text-foreground block mb-2">
+                                                Petakan Kolom Excel ke Variabel Template
+                                            </label>
+                                            <div className="space-y-2.5">
+                                                {templateVarIndices.map(idx => (
+                                                    <div key={idx} className="flex items-center gap-3">
+                                                        <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
+                                                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                                        <select
+                                                            value={varColMap[idx] ?? ''}
+                                                            onChange={e => setVarColMap(prev => ({ ...prev, [idx]: e.target.value }))}
+                                                            className="flex-1 text-sm rounded-md border border-border bg-background px-3 py-1.5 text-foreground">
+                                                            <option value="">— tidak diisi —</option>
+                                                            {excelColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        {/* Preview 3 penerima */}
+                                        {selectedTemplate && excelRecipients.length > 0 && (
+                                            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                                <p className="text-[10px] text-blue-300/70 mb-2">Preview 3 penerima pertama:</p>
+                                                <div className="space-y-2">
+                                                    {excelRecipients.slice(0, 3).map((r, i) => {
+                                                        const preview = templateVarIndices.reduce(
+                                                            (text, idx) => {
+                                                                const col = varColMap[idx];
+                                                                const val = col ? (r.rowData[col] ?? '') : `[var ${idx}]`;
+                                                                return text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), val || `[var ${idx}]`);
+                                                            },
+                                                            selectedTemplate.bodyText
+                                                        );
+                                                        const name = excelNameCol ? r.rowData[excelNameCol] : `Penerima ${i + 1}`;
+                                                        return (
+                                                            <div key={i} className="border-l-2 border-blue-500/40 pl-2">
+                                                                <p className="text-[10px] text-blue-300/60 mb-0.5">{name} ({r.rowData[excelPhoneCol]})</p>
+                                                                <p className="text-xs text-foreground whitespace-pre-wrap">{preview}</p>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         )}
@@ -605,16 +884,32 @@ export function BlastPage() {
                                 Selanjutnya →
                             </Button>
                         ) : formStep === 2 ? (
-                            <Button
-                                disabled={selectedContactIds.size === 0 || submitting}
-                                onClick={() => hasVars ? setFormStep(3) : handleCreate()}>
-                                {hasVars ? 'Selanjutnya →' : (submitting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</> : `Simpan Draft (${selectedContactIds.size} kontak)`)}
-                            </Button>
+                            (() => {
+                                const canNext = recipientMode === 'contacts'
+                                    ? selectedContactIds.size > 0
+                                    : excelRecipients.length > 0 && !!excelPhoneCol;
+                                const count = recipientMode === 'contacts'
+                                    ? selectedContactIds.size
+                                    : excelRecipients.length;
+                                return (
+                                    <Button
+                                        disabled={!canNext || submitting}
+                                        onClick={() => hasVars ? setFormStep(3) : handleCreate()}>
+                                        {hasVars
+                                            ? 'Selanjutnya →'
+                                            : submitting
+                                                ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</>
+                                                : `Simpan Draft (${count} kontak)`}
+                                    </Button>
+                                );
+                            })()
                         ) : (
                             <Button
                                 disabled={submitting}
                                 onClick={handleCreate}>
-                                {submitting ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</> : `Simpan Draft (${selectedContactIds.size} kontak)`}
+                                {submitting
+                                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> Menyimpan...</>
+                                    : `Simpan Draft (${recipientMode === 'contacts' ? selectedContactIds.size : excelRecipients.length} kontak)`}
                             </Button>
                         )}
                     </DialogFooter>

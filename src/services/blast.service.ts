@@ -25,21 +25,38 @@ export async function createCampaign(data: {
     templateName: string;
     languageCode?: string;
     components?: unknown[];
-    contactIds: string[];
+    contactIds?: string[];
+    excelRecipients?: { phoneNumber: string; contactName: string; components?: unknown[] }[];
 }) {
-    const contacts = await prisma.contact.findMany({
-        where: { id: { in: data.contactIds } },
-        select: { id: true, name: true, phoneNumber: true, waId: true },
-    });
-
-    // Deduplikasi berdasarkan nomor telepon
     const seenPhones = new Set<string>();
-    const recipients: { phoneNumber: string; contactName: string }[] = [];
-    for (const c of contacts) {
-        const phone = c.waId || c.phoneNumber;
-        if (!seenPhones.has(phone)) {
+    const recipients: { phoneNumber: string; contactName: string; components?: string }[] = [];
+
+    // Dari kontak DB
+    if (data.contactIds?.length) {
+        const contacts = await prisma.contact.findMany({
+            where: { id: { in: data.contactIds } },
+            select: { id: true, name: true, phoneNumber: true, waId: true },
+        });
+        for (const c of contacts) {
+            const phone = c.waId || c.phoneNumber;
+            if (!seenPhones.has(phone)) {
+                seenPhones.add(phone);
+                recipients.push({ phoneNumber: phone, contactName: c.name });
+            }
+        }
+    }
+
+    // Dari import Excel
+    if (data.excelRecipients?.length) {
+        for (const r of data.excelRecipients) {
+            const phone = r.phoneNumber.trim();
+            if (!phone || seenPhones.has(phone)) continue;
             seenPhones.add(phone);
-            recipients.push({ phoneNumber: phone, contactName: c.name });
+            recipients.push({
+                phoneNumber: phone,
+                contactName: r.contactName,
+                components: r.components?.length ? JSON.stringify(r.components) : undefined,
+            });
         }
     }
 
@@ -86,12 +103,16 @@ async function executeCampaign(campaign: {
     templateName: string;
     languageCode: string | null;
     components: string | null;
-    recipients: { id: string; phoneNumber: string }[];
+    recipients: { id: string; phoneNumber: string; components?: string | null }[];
 }) {
     const languageCode = campaign.languageCode ?? "id";
-    const components: unknown[] = campaign.components ? JSON.parse(campaign.components) : [];
+    const campaignComponents: unknown[] = campaign.components ? JSON.parse(campaign.components) : [];
 
     for (const recipient of campaign.recipients) {
+        // Gunakan komponen per-penerima jika ada (dari import Excel), fallback ke campaign
+        const components: unknown[] = recipient.components
+            ? JSON.parse(recipient.components)
+            : campaignComponents;
         // Cek apakah campaign dibatalkan di tengah jalan
         const current = await prisma.blastCampaign.findUnique({
             where: { id: campaign.id },

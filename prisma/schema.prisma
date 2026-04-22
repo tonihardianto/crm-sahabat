@@ -307,6 +307,7 @@ model BlastRecipient {
   campaignId   String              @map("campaign_id")
   phoneNumber  String              @map("phone_number")
   contactName  String?             @map("contact_name")
+  components   String?             @db.Text // JSON – per-recipient template components (override campaign-level)
   status       BlastRecipientStatus @default(PENDING)
   wamid        String?             @unique // WA Message ID untuk tracking
   sentAt       DateTime?           @map("sent_at")

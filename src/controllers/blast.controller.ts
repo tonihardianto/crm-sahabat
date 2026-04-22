@@ -25,16 +25,20 @@ export async function getCampaign(req: Request, res: Response): Promise<void> {
 }
 
 export async function createCampaign(req: AuthRequest, res: Response): Promise<void> {
-    const { name, templateName, languageCode, components, contactIds } = req.body as {
+    const { name, templateName, languageCode, components, contactIds, excelRecipients } = req.body as {
         name: string;
         templateName: string;
         languageCode?: string;
         components?: unknown[];
-        contactIds: string[];
+        contactIds?: string[];
+        excelRecipients?: { phoneNumber: string; contactName: string; components?: unknown[] }[];
     };
 
-    if (!name?.trim() || !templateName?.trim() || !Array.isArray(contactIds) || contactIds.length === 0) {
-        res.status(400).json({ error: "name, templateName, dan contactIds wajib diisi" });
+    const hasContacts = Array.isArray(contactIds) && contactIds.length > 0;
+    const hasExcel = Array.isArray(excelRecipients) && excelRecipients.length > 0;
+
+    if (!name?.trim() || !templateName?.trim() || (!hasContacts && !hasExcel)) {
+        res.status(400).json({ error: "name, templateName, dan minimal satu sumber penerima wajib diisi" });
         return;
     }
 
@@ -44,7 +48,8 @@ export async function createCampaign(req: AuthRequest, res: Response): Promise<v
             templateName: templateName.trim(),
             languageCode,
             components,
-            contactIds,
+            contactIds: hasContacts ? contactIds : undefined,
+            excelRecipients: hasExcel ? excelRecipients : undefined,
         });
         res.status(201).json(campaign);
     } catch (err) {

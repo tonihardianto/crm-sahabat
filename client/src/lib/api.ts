@@ -445,7 +445,8 @@ export async function createBlastCampaign(data: {
     templateName: string;
     languageCode: string;
     components?: unknown[];
-    contactIds: string[];
+    contactIds?: string[];
+    excelRecipients?: { phoneNumber: string; contactName: string; components?: unknown[] }[];
 }): Promise<BlastCampaign> {
     const res = await apiFetch(`${API_BASE}/blast`, {
         method: 'POST',
