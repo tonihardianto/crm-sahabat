@@ -943,7 +943,7 @@ export function BlastPage() {
 
             {/* ── Detail Campaign Dialog ── */}
             <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
+                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0 ">
                     {loadingDetail || !detailCampaign ? (
                         <div className="flex items-center justify-center p-16">
                             <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -1012,7 +1012,7 @@ export function BlastPage() {
                                 <Input value={detailSearch} onChange={e => setDetailSearch(e.target.value)}
                                     placeholder="Cari kontak atau nomor..." className="h-8 text-sm" />
                             </div>
-                            <ScrollArea className="flex-1 min-h-0">
+                            <ScrollArea className="flex-1 min-h-0 overflow-y-auto">
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-background border-b border-border">
                                         <tr>

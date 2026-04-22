@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ContactData {
     id: string;
@@ -85,7 +84,7 @@ export function ContactsPage() {
     });
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-background">
+        <div className="h-full flex flex-col bg-background">
             {/* Header */}
             <div className="px-4 md:px-8 py-4 md:py-5 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
                 <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
@@ -109,7 +108,7 @@ export function ContactsPage() {
             </div>
 
             {/* Table */}
-            <ScrollArea className="flex-1">
+            <div className="flex-1 overflow-y-auto min-h-0">
                 <div className="px-4 md:px-8 py-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
@@ -173,7 +172,7 @@ export function ContactsPage() {
                         </div>
                     )}
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* Dialog Form */}
             <Dialog open={modalOpen} onOpenChange={setModalOpen}>
