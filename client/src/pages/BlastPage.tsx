@@ -232,9 +232,10 @@ export function BlastPage() {
         reader.onload = (e) => {
             try {
                 const data = new Uint8Array(e.target!.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+                // raw: false → SheetJS render nilai sesuai format cell Excel (tanggal/jam jadi string terbaca)
+                const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '', raw: false });
                 if (!rows.length) { toast.error('File kosong atau format tidak valid'); return; }
                 const cols = Object.keys(rows[0]).map(String);
                 setExcelColumns(cols);
