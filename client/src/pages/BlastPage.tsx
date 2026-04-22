@@ -119,8 +119,10 @@ export function BlastPage() {
     const [excelColumns, setExcelColumns] = useState<string[]>([]);
     const [excelPhoneCol, setExcelPhoneCol] = useState('');
     const [excelNameCol, setExcelNameCol] = useState('');
-    /** Mapping: nomor variabel template (1,2,...) -> nama kolom Excel */
+    /** Mapping: nomor variabel template (1,2,...) -> nama kolom Excel, atau '__manual__' jika input manual */
     const [varColMap, setVarColMap] = useState<Record<number, string>>({});
+    /** Nilai manual untuk variabel yang dipilih 'Lainnya' (berlaku sama semua penerima) */
+    const [varManualMap, setVarManualMap] = useState<Record<number, string>>({});
 
     // Detail dialog
     const [detailCampaign, setDetailCampaign] = useState<BlastCampaign | null>(null);
@@ -169,6 +171,7 @@ export function BlastPage() {
         setExcelPhoneCol('');
         setExcelNameCol('');
         setVarColMap({});
+        setVarManualMap({});
         setCreateOpen(true);
 
         if (templates.length === 0 || contacts.length === 0) {
@@ -220,6 +223,7 @@ export function BlastPage() {
         detectVars(t.bodyText).forEach(i => { vars[i] = ''; });
         setTemplateVars(vars);
         setVarColMap({});
+        setVarManualMap({});
     };
 
     /** Parse file Excel/CSV yang di-upload */
@@ -300,7 +304,10 @@ export function BlastPage() {
                     // Buat components per-penerima jika ada variabel yang di-mapping ke kolom
                     const params = varIndices.map(idx => {
                         const col = varColMap[idx];
-                        return { type: 'text', text: col ? (r.rowData[col] ?? '') : '' };
+                        const text = col === '__manual__'
+                            ? (varManualMap[idx] ?? '')
+                            : col ? (r.rowData[col] ?? '') : '';
+                        return { type: 'text', text };
                     });
                     const perRecipientComponents: unknown[] = varIndices.length > 0
                         ? [{ type: 'body', parameters: params }]
@@ -548,7 +555,7 @@ export function BlastPage() {
 
             {/* ── Create Campaign Dialog ── */}
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
+                <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col gap-0 p-0">
                     <DialogHeader className="px-6 py-4 border-b border-border shrink-0">
                         <DialogTitle className="flex items-center gap-2">
                             <Megaphone className="w-4 h-4 text-orange-400" />
@@ -826,41 +833,58 @@ export function BlastPage() {
                                             <label className="text-sm font-medium text-foreground block mb-2">
                                                 Petakan Kolom Excel ke Variabel Template
                                             </label>
-                                            <div className="space-y-2.5">
+                                            <div className="space-y-3">
                                                 {templateVarIndices.map(idx => (
-                                                    <div key={idx} className="flex items-center gap-3">
-                                                        <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
-                                                        <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                                        <select
-                                                            value={varColMap[idx] ?? ''}
-                                                            onChange={e => setVarColMap(prev => ({ ...prev, [idx]: e.target.value }))}
-                                                            className="flex-1 text-sm rounded-md border border-border bg-background px-3 py-1.5 text-foreground">
-                                                            <option value="">— tidak diisi —</option>
-                                                            {excelColumns.map(c => <option key={c} value={c}>{c}</option>)}
-                                                        </select>
+                                                    <div key={idx} className="space-y-1.5">
+                                                        <div className="flex items-center gap-3">
+                                                            <span className="text-xs text-muted-foreground font-mono w-12 shrink-0">{`{{${idx}}}`}</span>
+                                                            <ArrowRight className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                                            <select
+                                                                value={varColMap[idx] ?? ''}
+                                                                onChange={e => setVarColMap(prev => ({ ...prev, [idx]: e.target.value }))}
+                                                                className="flex-1 text-sm rounded-md border border-border bg-background px-3 py-1.5 text-foreground">
+                                                                <option value="">— tidak diisi —</option>
+                                                                {excelColumns.map(c => <option key={c} value={c}>{c}</option>)}
+                                                                <option value="__manual__">Tulis sendiri ...</option>
+                                                            </select>
+                                                        </div>
+                                                        {varColMap[idx] === '__manual__' && (
+                                                            <div className="flex items-center gap-3 ms-7 pl-[3.75rem]">
+                                                                <Input
+                                                                    value={varManualMap[idx] ?? ''}
+                                                                    onChange={e => setVarManualMap(prev => ({ ...prev, [idx]: e.target.value }))}
+                                                                    placeholder={`Teks untuk {{${idx}}} (berlaku semua penerima)`}
+                                                                    className="flex-1 h-8 text-sm"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                         {/* Preview 3 penerima */}
                                         {selectedTemplate && excelRecipients.length > 0 && (
-                                            <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
-                                                <p className="text-[10px] text-blue-300/70 mb-2">Preview 3 penerima pertama:</p>
+                                            <div className="p-3 rounded-lg bg-blue-500/10">
+                                                <p className="text-[10px] text-primary mb-2">Preview 3 penerima pertama:</p>
                                                 <div className="space-y-2">
                                                     {excelRecipients.slice(0, 3).map((r, i) => {
                                                         const preview = templateVarIndices.reduce(
                                                             (text, idx) => {
                                                                 const col = varColMap[idx];
-                                                                const val = col ? (r.rowData[col] ?? '') : `[var ${idx}]`;
+                                                                const val = col === '__manual__'
+                                                                    ? (varManualMap[idx] || `[manual ${idx}]`)
+                                                                    : col ? (r.rowData[col] ?? '') : `[var ${idx}]`;
                                                                 return text.replace(new RegExp(`\\{\\{${idx}\\}\\}`, 'g'), val || `[var ${idx}]`);
                                                             },
                                                             selectedTemplate.bodyText
                                                         );
                                                         const name = excelNameCol ? r.rowData[excelNameCol] : `Penerima ${i + 1}`;
                                                         return (
-                                                            <div key={i} className="border-l-2 border-blue-500/40 pl-2">
-                                                                <p className="text-[10px] text-blue-300/60 mb-0.5">{name} ({r.rowData[excelPhoneCol]})</p>
+                                                            <div key={i} className=" pl-2">
+                                                                <hr className="border-primary/20 mt-2 mb-2"></hr>
+                                                                <p className="text-[10px] font-bold text-primary mb-0.5">{name} ({r.rowData[excelPhoneCol]})</p>
                                                                 <p className="text-xs text-foreground whitespace-pre-wrap">{preview}</p>
+                                                                
                                                             </div>
                                                         );
                                                     })}
