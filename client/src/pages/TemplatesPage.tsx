@@ -53,6 +53,14 @@ export function TemplatesPage() {
     const [syncing, setSyncing] = useState(false);
     const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [bodySamples, setBodySamples] = useState<string[]>([]);
+    const [headerSample, setHeaderSample] = useState('');
+
+    const extractVarCount = (text: string): number => {
+        const matches = text.match(/\{\{\d+\}\}/g) || [];
+        if (matches.length === 0) return 0;
+        return Math.max(...matches.map(m => parseInt(m.replace(/[{}]/g, ''))));
+    };
 
     const handleCopy = (id: string, text: string) => {
         navigator.clipboard.writeText(text);
@@ -72,6 +80,8 @@ export function TemplatesPage() {
         setEditing(null);
         setForm({ name: '', bodyText: '', headerText: '', footerText: '', category: 'UTILITY', language: 'id' });
         setButtons([]);
+        setBodySamples([]);
+        setHeaderSample('');
         setModalOpen(true);
     };
 
@@ -79,6 +89,8 @@ export function TemplatesPage() {
         setEditing(t);
         setForm({ name: t.name, bodyText: t.bodyText, headerText: t.headerText || '', footerText: t.footerText || '', category: t.category, language: t.language });
         setButtons((t.buttons || []) as TemplateButton[]);
+        setBodySamples([]);
+        setHeaderSample('');
         setModalOpen(true);
     };
 
@@ -89,7 +101,7 @@ export function TemplatesPage() {
                 await fetch(`${API}/${editing.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, buttons }) });
                 toast.success('Template berhasil diperbarui');
             } else {
-                const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, buttons }) });
+                const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, buttons, bodySamples, headerSample }) });
                 const data = await res.json();
                 if (data.metaError) {
                     toast.warning('Template disimpan, tapi gagal submit ke Meta: ' + data.metaError, { duration: 6000 });
@@ -126,7 +138,7 @@ export function TemplatesPage() {
             const res = await fetch(`${API}/sync`, { method: 'POST', credentials: 'include' });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || 'Sync failed');
-            toast.success(`Sync berhasil! ${data.total} template dari Meta (${data.created} baru, ${data.updated} diperbarui)`);
+            toast.success(`Sync berhasil! ${data.total} template dari Meta (${data.created} baru, ${data.updated} diperbarui${data.deleted ? `, ${data.deleted} dihapus` : ''})`);
             load();
         } catch (err) {
             console.error(err);
@@ -142,7 +154,7 @@ export function TemplatesPage() {
     });
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-background">
+        <div className="flex-1 flex flex-col min-h-0 bg-background h-full max-h-screen">
             {/* Header */}
             <div className="px-4 md:px-8 py-4 md:py-5 border-b border-border bg-card/50 backdrop-blur-sm shrink-0">
                 <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
@@ -172,7 +184,7 @@ export function TemplatesPage() {
             </div>
 
             {/* Grid */}
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0 max-h-[calc(100vh-120px)]">
                 <div className="px-4 md:px-8 py-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
@@ -279,11 +291,35 @@ export function TemplatesPage() {
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Header (opsional)</label>
                             <Input value={form.headerText} onChange={(e) => setForm({ ...form, headerText: e.target.value })} placeholder="Header text" />
+                            {!editing && extractVarCount(form.headerText) > 0 && (
+                                <div className="p-2 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-1.5">
+                                    <p className="text-[10px] text-amber-400 font-medium">Contoh nilai variabel header (wajib untuk Meta)</p>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[10px] text-muted-foreground w-8">{'{{1}}'}</span>
+                                        <Input className="h-7 text-xs" placeholder="Contoh nilai untuk {{1}}" value={headerSample}
+                                            onChange={(e) => setHeaderSample(e.target.value)} required />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Body *</label>
                             <Textarea required value={form.bodyText} onChange={(e) => setForm({ ...form, bodyText: e.target.value })} rows={4}
                                 placeholder="Tulis isi template. Gunakan {{1}}, {{2}} untuk placeholder." />
+                            {!editing && extractVarCount(form.bodyText) > 0 && (
+                                <div className="p-2 rounded-lg border border-amber-500/30 bg-amber-500/5 space-y-1.5">
+                                    <p className="text-[10px] text-amber-400 font-medium">Contoh nilai variabel body (wajib agar Meta tidak reject)</p>
+                                    {Array.from({ length: extractVarCount(form.bodyText) }, (_, i) => (
+                                        <div key={i} className="flex items-center gap-2">
+                                            <span className="text-[10px] text-muted-foreground w-8">{`{{${i + 1}}}`}</span>
+                                            <Input className="h-7 text-xs" placeholder={`Contoh nilai untuk {{${i + 1}}}`}
+                                                value={bodySamples[i] || ''}
+                                                onChange={(e) => setBodySamples(prev => { const n = [...prev]; n[i] = e.target.value; return n; })}
+                                                required />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-muted-foreground">Footer (opsional)</label>

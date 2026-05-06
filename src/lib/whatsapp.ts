@@ -117,6 +117,7 @@ interface MetaTemplateComponent {
     format?: string;
     text?: string;
     buttons?: MetaTemplateButton[];
+    example?: { header_text?: string[]; body_text?: string[][] };
 }
 
 interface MetaTemplate {
@@ -151,6 +152,25 @@ export async function fetchMetaTemplates(): Promise<MetaTemplate[]> {
 }
 
 /**
+ * Hapus template dari Meta (by name — menghapus semua language variant)
+ */
+export async function deleteMetaTemplate(templateName: string): Promise<void> {
+    const wabaId = process.env.WABA_ID;
+    if (!wabaId) throw new Error("WABA_ID not configured in .env");
+    const { accessToken } = getConfig();
+
+    const url = `${BASE_URL}/${wabaId}/message_templates?name=${encodeURIComponent(templateName)}`;
+    const response = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+    });
+    if (!response.ok) {
+        const result = await response.json();
+        throw new Error(`Meta template delete error: ${JSON.stringify(result)}`);
+    }
+}
+
+/**
  * Submit template baru ke Meta untuk approval
  */
 export async function submitMetaTemplate(params: {
@@ -161,6 +181,8 @@ export async function submitMetaTemplate(params: {
     bodyText: string;
     footerText?: string | null;
     buttons?: MetaTemplateButton[];
+    bodySamples?: string[];
+    headerSample?: string;
 }): Promise<{ id: string; status: string }> {
     const wabaId = process.env.WABA_ID;
     if (!wabaId) throw new Error("WABA_ID not configured in .env");
@@ -168,9 +190,19 @@ export async function submitMetaTemplate(params: {
 
     const components: MetaTemplateComponent[] = [];
     if (params.headerText) {
-        components.push({ type: "HEADER", format: "TEXT", text: params.headerText });
+        const headerComp: MetaTemplateComponent = { type: "HEADER", format: "TEXT", text: params.headerText };
+        if (params.headerSample && /\{\{\d+\}\}/.test(params.headerText)) {
+            headerComp.example = { header_text: [params.headerSample] };
+        }
+        components.push(headerComp);
     }
-    components.push({ type: "BODY", text: params.bodyText });
+
+    const bodyComp: MetaTemplateComponent = { type: "BODY", text: params.bodyText };
+    if (params.bodySamples && params.bodySamples.length > 0 && /\{\{\d+\}\}/.test(params.bodyText)) {
+        bodyComp.example = { body_text: [params.bodySamples] };
+    }
+    components.push(bodyComp);
+
     if (params.footerText) {
         components.push({ type: "FOOTER", text: params.footerText });
     }

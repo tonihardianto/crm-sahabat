@@ -9,6 +9,10 @@ export async function listTemplates() {
     });
 }
 
+export async function getTemplate(id: string) {
+    return prisma.chatTemplate.findUnique({ where: { id } });
+}
+
 export async function createTemplate(data: {
     name: string;
     bodyText: string;
@@ -33,6 +37,8 @@ export async function updateTemplate(
         buttons?: object;
         category?: TemplateCategoryType;
         language?: string;
+        metaId?: string;
+        status?: TemplateStatus;
     }
 ) {
     return prisma.chatTemplate.update({ where: { id }, data });
@@ -42,7 +48,7 @@ export async function deleteTemplate(id: string) {
     return prisma.chatTemplate.delete({ where: { id } });
 }
 
-export async function syncTemplatesFromMeta(): Promise<{ created: number; updated: number; total: number }> {
+export async function syncTemplatesFromMeta(): Promise<{ created: number; updated: number; deleted: number; total: number }> {
     const metaTemplates = await fetchMetaTemplates();
     let created = 0, updated = 0;
 
@@ -89,5 +95,18 @@ export async function syncTemplatesFromMeta(): Promise<{ created: number; update
         }
     }
 
-    return { created, updated, total: metaTemplates.length };
+    // Hapus template lokal yang sudah tidak ada di Meta (berdasarkan metaId)
+    const metaIds = metaTemplates.map(t => t.id);
+    const metaNames = metaTemplates.map(t => t.name);
+    const { count: deleted } = await prisma.chatTemplate.deleteMany({
+        where: {
+            AND: [
+                { metaId: { not: null } },
+                { metaId: { notIn: metaIds } },
+                { name: { notIn: metaNames } },
+            ],
+        },
+    });
+
+    return { created, updated, deleted, total: metaTemplates.length };
 }

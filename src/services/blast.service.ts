@@ -1,5 +1,7 @@
 import prisma from "../lib/prisma";
 import { sendTemplateMessage } from "../lib/whatsapp";
+import { generateTicketNumber } from "../utils/generateTicketNumber";
+import { emitNewTicket, emitNewMessage } from "../lib/socket";
 
 /** Delay antar pengiriman untuk menghindari rate-limit Meta (~3 pesan/detik) */
 const THROTTLE_MS = 350;
@@ -80,7 +82,7 @@ export async function createCampaign(data: {
 export async function startCampaign(id: string): Promise<void> {
     const campaign = await prisma.blastCampaign.findUnique({
         where: { id },
-        include: { recipients: { where: { status: "PENDING" } } },
+        include: { recipients: { where: { status: "PENDING" }, select: { id: true, phoneNumber: true, contactName: true, components: true } } },
     });
 
     if (!campaign) throw new Error("Campaign tidak ditemukan");
@@ -98,12 +100,90 @@ export async function startCampaign(id: string): Promise<void> {
     });
 }
 
+/**
+ * Cari tiket aktif untuk nomor WA tertentu, atau buat tiket baru jika belum ada.
+ * Tiket baru langsung di-set RESOLVED agar tidak flood ticket list aktif —
+ * akan dibuka kembali secara otomatis oleh webhook jika customer membalas.
+ */
+async function findOrCreateTicketForBlast(
+    phoneNumber: string,
+    contactName: string
+): Promise<{ ticketId: string; contactId: string; contactName: string; isNew: boolean }> {
+    // Cari contact berdasarkan waId atau phoneNumber
+    let contact = await prisma.contact.findFirst({
+        where: { OR: [{ waId: phoneNumber }, { phoneNumber }] },
+        include: { client: true },
+    });
+
+    // Jika belum ada, buat contact baru di client "Unknown"
+    if (!contact) {
+        let unknownClient = await prisma.client.findFirst({ where: { customerId: "UNKNOWN" } });
+        if (!unknownClient) {
+            unknownClient = await prisma.client.create({
+                data: { name: "Unknown", customerId: "UNKNOWN" },
+            });
+        }
+        contact = await prisma.contact.create({
+            data: {
+                waId: phoneNumber,
+                phoneNumber,
+                name: contactName || "Unknown",
+                clientId: unknownClient.id,
+            },
+            include: { client: true },
+        });
+    }
+
+    // Cari tiket aktif (bukan ARCHIVED / RESOLVED)
+    const activeTicket = await prisma.ticket.findFirst({
+        where: { contactId: contact.id, status: { notIn: ["RESOLVED", "ARCHIVED"] } },
+        orderBy: { createdAt: "desc" },
+    });
+
+    if (activeTicket) {
+        return { ticketId: activeTicket.id, contactId: contact.id, contactName: contact.name, isNew: false };
+    }
+
+    // Buat tiket baru, langsung RESOLVED agar tidak flood ticket list
+    const MAX_RETRIES = 5;
+    let newTicket = null;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        const ticketNumber = await generateTicketNumber();
+        try {
+            newTicket = await prisma.ticket.create({
+                data: {
+                    ticketNumber,
+                    contactId: contact.id,
+                    category: "SERVICE",
+                    status: "RESOLVED",
+                    priority: "MEDIUM",
+                },
+                include: {
+                    contact: { include: { client: true } },
+                    assignedAgent: { select: { id: true, name: true } },
+                    claimedBy: { select: { id: true, name: true } },
+                    messages: true,
+                    _count: { select: { messages: { where: { isRead: false, direction: "INBOUND" } } } },
+                },
+            });
+            break;
+        } catch (e: unknown) {
+            const isUniqueViolation = e instanceof Error && (e as { code?: string }).code === "P2002";
+            if (isUniqueViolation && attempt < MAX_RETRIES - 1) continue;
+            throw e;
+        }
+    }
+    if (!newTicket) throw new Error("Gagal membuat tiket untuk blast recipient");
+
+    return { ticketId: newTicket.id, contactId: contact.id, contactName: contact.name, isNew: true };
+}
+
 async function executeCampaign(campaign: {
     id: string;
     templateName: string;
     languageCode: string | null;
     components: string | null;
-    recipients: { id: string; phoneNumber: string; components?: string | null }[];
+    recipients: { id: string; phoneNumber: string; contactName: string | null; components?: string | null }[];
 }) {
     const languageCode = campaign.languageCode ?? "id";
     const campaignComponents: unknown[] = campaign.components ? JSON.parse(campaign.components) : [];
@@ -135,6 +215,51 @@ async function executeCampaign(campaign: {
                 where: { id: campaign.id },
                 data: { sentCount: { increment: 1 } },
             });
+
+            // Simpan pesan blast ke tiket (buat tiket jika belum ada)
+            try {
+                const { ticketId, contactName, isNew } = await findOrCreateTicketForBlast(
+                    recipient.phoneNumber,
+                    recipient.contactName ?? "Unknown"
+                );
+                const savedMessage = await prisma.message.create({
+                    data: {
+                        ticketId,
+                        direction: "OUTBOUND",
+                        type: "TEXT",
+                        body: `[Blast: ${campaign.templateName}]`,
+                        wamid,
+                        timestamp: new Date(),
+                        isRead: true,
+                    },
+                    include: {
+                        sentBy: { select: { id: true, name: true } },
+                        replyTo: { select: { id: true, body: true, direction: true, type: true, sentBy: { select: { name: true } } } },
+                    },
+                });
+                await prisma.ticket.update({
+                    where: { id: ticketId },
+                    data: { updatedAt: new Date() },
+                });
+                if (isNew) {
+                    // Emit tiket baru agar muncul di ticket list realtime
+                    const fullTicket = await prisma.ticket.findUnique({
+                        where: { id: ticketId },
+                        include: {
+                            contact: { include: { client: true } },
+                            assignedAgent: { select: { id: true, name: true } },
+                            claimedBy: { select: { id: true, name: true } },
+                            messages: { orderBy: { timestamp: "desc" }, take: 1 },
+                            _count: { select: { messages: { where: { isRead: false, direction: "INBOUND" } } } },
+                        },
+                    });
+                    if (fullTicket) emitNewTicket(fullTicket as unknown as Record<string, unknown>);
+                }
+                emitNewMessage(ticketId, savedMessage as unknown as Record<string, unknown>, { name: contactName });
+            } catch (ticketErr) {
+                // Jangan gagalkan blast hanya karena gagal buat tiket
+                console.error(`[Blast] Failed to save message to ticket for ${recipient.phoneNumber}:`, ticketErr);
+            }
         } catch (err) {
             const errMsg = err instanceof Error ? err.message : String(err);
             await prisma.blastRecipient.update({
