@@ -167,8 +167,11 @@ export function CalendarPage() {
 
     const fetchTeams = useCallback(async () => {
         try {
-            const res = await fetch('/api/teams', { credentials: 'include' });
-            if (res.ok) setTeams(await res.json());
+            const res = await fetch('/api/teams?limit=100', { credentials: 'include' });
+            if (res.ok) {
+                const data = await res.json();
+                setTeams(data.teams ?? []);
+            }
         } catch { /* silently ignore */ }
     }, []);
 

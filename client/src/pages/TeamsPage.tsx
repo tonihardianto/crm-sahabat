@@ -124,7 +124,7 @@ export function TeamsPage() {
     );
 
     return (
-        <div className="flex-1 flex flex-col min-h-0 bg-background">
+        <div className="h-full flex flex-col bg-background overflow-hidden">
             {/* Header */}
             <div className="px-4 md:px-8 py-4 md:py-6 border-b border-border bg-card/50 shrink-0 flex items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
