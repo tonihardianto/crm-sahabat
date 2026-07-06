@@ -86,16 +86,22 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
                 select: { id: true, name: true, phone: true },
             });
 
-            // Format date in Indonesian
+            // Format dates in WIB (Asia/Jakarta)
+            const TZ = "Asia/Jakarta";
+            const fmtDate = (d: Date) =>
+                d.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TZ });
+            const tzParts = (d: Date) => {
+                const parts = new Intl.DateTimeFormat("id-ID", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TZ }).formatToParts(d);
+                const h = parts.find(p => p.type === "hour")?.value ?? "00";
+                const m = parts.find(p => p.type === "minute")?.value ?? "00";
+                return `${h}:${m}`;
+            };
+
             const start = new Date(startDate);
-            const dateStr = start.toLocaleDateString("id-ID", {
-                weekday: "long", day: "numeric", month: "long", year: "numeric",
-            });
-            const timeStr = allDay
-                ? "Seharian penuh"
-                : `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+            const dateStr = fmtDate(start);
+            const timeStr = allDay ? "Seharian penuh" : tzParts(start);
             const endTimeStr = !allDay && endDate
-                ? ` - ${String(new Date(endDate).getHours()).padStart(2, "0")}:${String(new Date(endDate).getMinutes()).padStart(2, "0")}`
+                ? ` - ${tzParts(new Date(endDate))}`
                 : "";
             const formattedDate = `${dateStr}, ${timeStr}${endTimeStr}`;
             const place = location || "Online";
