@@ -17,6 +17,7 @@ import quickReplyRoutes from "./routes/quick-reply.routes";
 import pushRoutes from "./routes/push.routes";
 import calendarRoutes from "./routes/calendar.routes";
 import blastRoutes from "./routes/blast.routes";
+import teamRoutes from "./routes/team.routes";
 import { requireAuth } from "./middlewares/auth.middleware";
 
 const app = express();
@@ -54,6 +55,7 @@ app.use("/api/quick-replies", requireAuth, quickReplyRoutes);
 app.use("/api/push", requireAuth, pushRoutes);
 app.use("/api/calendar", calendarRoutes); // GET public, POST/PUT/DELETE admin-only (handled in router)
 app.use("/api/blast", requireAuth, blastRoutes);
+app.use("/api/teams", requireAuth, teamRoutes);
 
 // ---- Health Check ----
 app.get("/health", (_req, res) => {

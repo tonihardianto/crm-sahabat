@@ -18,10 +18,10 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 const NOTIF_META: Record<NotificationItemType, { icon: React.ReactNode; color: string; bg: string }> = {
-    message:    { icon: <MessageCircle className="w-4 h-4" />,    color: 'text-blue-400',   bg: 'bg-blue-500/15' },
-    ticket_new: { icon: <Ticket className="w-4 h-4" />,           color: 'text-amber-400',  bg: 'bg-amber-500/15' },
-    handover:   { icon: <ArrowRightLeft className="w-4 h-4" />,   color: 'text-violet-400', bg: 'bg-violet-500/15' },
-    assign:     { icon: <UserCheck className="w-4 h-4" />,        color: 'text-emerald-400',bg: 'bg-emerald-500/15' },
+    message:    { icon: <MessageCircle className="w-4 h-4" />,    color: 'text-primary',   bg: 'bg-primary/15' },
+    ticket_new: { icon: <Ticket className="w-4 h-4" />,           color: 'text-warning',  bg: 'bg-warning/15' },
+    handover:   { icon: <ArrowRightLeft className="w-4 h-4" />,   color: 'text-info',     bg: 'bg-info/15' },
+    assign:     { icon: <UserCheck className="w-4 h-4" />,        color: 'text-success',  bg: 'bg-success/15' },
 };
 
 function timeAgo(date: Date): string {
@@ -90,7 +90,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                         >
                             <Bell className="w-4 h-4" />
                             {unreadCount > 0 && (
-                                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold px-0.5 leading-none">
+                                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-destructive text-destructive-foreground text-[9px] font-bold px-0.5 leading-none">
                                     {unreadCount > 99 ? '99+' : unreadCount}
                                 </span>
                             )}
@@ -122,7 +122,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                                 {notifyPermission === 'default' && (
                                     <button
                                         onClick={requestPermission}
-                                        className="text-xs text-blue-400 hover:text-blue-300 px-1.5 py-0.5 rounded hover:bg-accent transition-colors"
+                                        className="text-xs text-primary hover:text-primary/80 px-1.5 py-0.5 rounded hover:bg-accent transition-colors"
                                     >
                                         Izinkan notifikasi
                                     </button>
@@ -160,7 +160,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                                                     {n.detail && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{n.detail}</p>}
                                                 </div>
                                                 {!n.read && (
-                                                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0 mt-1.5" />
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 mt-1.5" />
                                                 )}
                                             </div>
                                         );
@@ -183,7 +183,7 @@ export function Topbar({ onMenuClick }: TopbarProps) {
                 {user && (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <button className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500/20 to-violet-500/20 border border-border flex items-center justify-center text-xs font-bold text-foreground hover:ring-2 ring-blue-500/20 transition-all outline-none">
+                            <button className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-border flex items-center justify-center text-xs font-bold text-foreground hover:ring-2 ring-primary/20 transition-all outline-none">
                                 {user.name.slice(0, 2).toUpperCase()}
                             </button>
                         </DropdownMenuTrigger>

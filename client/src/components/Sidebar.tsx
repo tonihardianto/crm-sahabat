@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive, CalendarDays, Megaphone } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Building2, Users, FileText, Shield, ChevronLeft, ChevronRight, Archive, CalendarDays, Megaphone, UserCog } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotification } from '@/context/NotificationContext';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -33,7 +33,7 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                             title={collapsed ? label : undefined}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/10 dark:text-blue-400'
+                                    ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                 } ${collapsed ? 'justify-center' : ''}`
                             }
@@ -41,7 +41,7 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                             <div className="relative shrink-0">
                                 <Icon className="w-4 h-4" />
                                 {to === '/tickets' && unreadCount > 0 && (
-                                    <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-emerald-500 text-white text-[10px] font-semibold px-1 leading-none">
+                                    <span className="absolute -top-2 -right-2 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-semibold px-1 leading-none">
                                         {unreadCount > 99 ? '99+' : unreadCount}
                                     </span>
                                 )}
@@ -62,13 +62,27 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                             title={collapsed ? 'User Management' : undefined}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-violet-50 text-violet-600 dark:bg-violet-500/10 dark:text-violet-400'
+                                    ? 'bg-primary/10 text-primary'
                                     : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                                 } ${collapsed ? 'justify-center' : ''}`
                             }
                         >
                             <Shield className="w-4 h-4 shrink-0" />
                             {!collapsed && 'User Management'}
+                        </NavLink>
+                        <NavLink
+                            to="/teams"
+                            onClick={onNavigate}
+                            title={collapsed ? 'Tim Management' : undefined}
+                            className={({ isActive }) =>
+                                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive
+                                    ? 'bg-primary/10 text-primary'
+                                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                                } ${collapsed ? 'justify-center' : ''}`
+                            }
+                        >
+                            <UserCog className="w-4 h-4 shrink-0" />
+                            {!collapsed && 'Tim Management'}
                         </NavLink>
                     </nav>
                 </div>
@@ -79,11 +93,11 @@ function NavItems({ collapsed, onNavigate }: { collapsed?: boolean; onNavigate?:
                     <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-2">Custom Filters</h3>
                     <nav className="space-y-0.5">
                         <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-left">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 ml-1" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0 ml-1" />
                             Active Tickets
                         </button>
                         <button className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-left">
-                            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0 ml-1" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0 ml-1" />
                             Pending Templates
                         </button>
                     </nav>

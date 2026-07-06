@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Lock, Mail, AlertCircle } from 'lucide-react';
+import { Mail, Lock, AlertCircle } from 'lucide-react';
 import logoLight from '@/assets/images/logo-256.png';
-
 
 export function LoginPage() {
     const [email, setEmail] = useState('');
@@ -31,83 +28,107 @@ export function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            {/* Background glow */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-blue-600/10 rounded-full blur-3xl" />
-                <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[400px] bg-violet-600/8 rounded-full blur-3xl" />
-            </div>
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Signature: breathing ambient glow */}
+            <div
+                className="ambient-glow absolute inset-0 pointer-events-none"
+                aria-hidden="true"
+                style={{
+                    background: 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(200, 132, 44, 0.12) 0%, transparent 70%)',
+                }}
+            />
 
-            <div className="relative w-full max-w-md">
-                {/* Logo */}
-                <div className="flex flex-col items-center mb-8">
-                    <div className="w-16 h-16 rounded-2xl bg-transparent flex items-center justify-center shadow-2xl shadow-blue-500/30 mb-4">
-                        {/* <Headset className="w-8 h-8 text-white" /> */}
-                        <img src={logoLight} alt="CRM WhatsApp Logo" className="w-16 h-16" />
-                    </div>
-                    <h1 className="text-2xl font-bold text-foreground">AIshaCRM Sahabat</h1>
-                    <p className="text-sm text-muted-foreground mt-1">Customer Support SIMRS Sahabat</p>
+            <div className="relative w-full max-w-sm">
+                {/* Brand */}
+                <div className="flex flex-col items-center mb-10">
+                    <img
+                        src={logoLight}
+                        alt="AishaCRM"
+                        className="w-12 h-12 mb-5 opacity-90"
+                    />
+                    <h1
+                        className="text-4xl tracking-tight text-foreground mb-2"
+                        style={{ fontFamily: 'var(--font-display)' }}
+                    >
+                        AishaCRM
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        SIMRS Sahabat
+                    </p>
                 </div>
 
-                <Card className="border-border/50 shadow-2xl bg-card/80 backdrop-blur-sm">
-                    <CardHeader className="space-y-1 pb-4 text-center">
-                        <CardTitle className="text-xl">Masuk ke Dashboard</CardTitle>
-                        <CardDescription>Masukkan email dan password Anda</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {error && (
-                                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
-                                    <AlertCircle className="w-4 h-4 shrink-0" />
-                                    {error}
-                                </div>
-                            )}
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Email</label>
-                                <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        required
-                                        autoComplete="email"
-                                        placeholder="yourname@example.com"
-                                        value={email}
-                                        onChange={(e) => setEmail(e.target.value)}
-                                        className="pl-9"
-                                    />
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-sm font-medium text-foreground">Password</label>
-                                <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                    <Input
-                                        id="password"
-                                        type="password"
-                                        required
-                                        autoComplete="current-password"
-                                        placeholder="••••••••"
-                                        value={password}
-                                        onChange={(e) => setPassword(e.target.value)}
-                                        className="pl-9"
-                                    />
-                                </div>
-                            </div>
-                            <Button type="submit" className={`w-full mt-2 text-white/70 ${loading ? 'cursor-not-allowed' : 'cursor-pointer'}`} disabled={loading}>
-                                {loading ? (
-                                    <span className="flex items-center gap-2">
-                                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin text-white cursor-not-allowed" />
-                                        Masuk...
-                                    </span>
-                                ) : 'Masuk'}
-                            </Button>
-                        </form>
-                    </CardContent>
-                </Card>
+                {/* Login card */}
+                <div className="bg-card border border-border/60 rounded-2xl shadow-2xl p-6">
+                    <div className="mb-5">
+                        <h2 className="text-base font-semibold text-foreground">Selamat datang kembali</h2>
+                        <p className="text-xs text-muted-foreground mt-1">Masuk untuk melanjutkan ke dashboard</p>
+                    </div>
 
-                <p className="text-center text-xs text-muted-foreground mt-6">
-                    Hubungi administrator jika lupa password.
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        {error && (
+                            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-xs">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                {error}
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <label htmlFor="email" className="text-xs font-medium text-foreground/80">
+                                Email
+                            </label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    required
+                                    autoComplete="email"
+                                    placeholder="nama@example.com"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="pl-9 h-10 text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                            <label htmlFor="password" className="text-xs font-medium text-foreground/80">
+                                Password
+                            </label>
+                            <div className="relative">
+                                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                                <Input
+                                    id="password"
+                                    type="password"
+                                    required
+                                    autoComplete="current-password"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    className="pl-9 h-10 text-sm"
+                                />
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full h-10 mt-2 inline-flex items-center justify-center rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <span className="flex items-center gap-2">
+                                    <span className="w-3.5 h-3.5 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+                                    Masuk...
+                                </span>
+                            ) : (
+                                'Masuk'
+                            )}
+                        </button>
+                    </form>
+                </div>
+
+                <p className="text-center text-[11px] text-muted-foreground mt-6">
+                    Hubungi administrator jika lupa password
                 </p>
             </div>
         </div>

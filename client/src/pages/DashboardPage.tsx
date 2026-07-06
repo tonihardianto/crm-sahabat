@@ -81,48 +81,48 @@ export function DashboardPage() {
             label: 'Total Clients',
             value: stats?.totalClients ?? '—',
             icon: Building2,
-            color: 'text-blue-400',
-            bg: 'bg-blue-500/10 border-blue-500/20',
+            color: 'text-primary',
+            bg: 'bg-primary/10 border-primary/20',
             desc: 'Rumah Sakit terdaftar',
         },
         {
             label: 'Total Contacts',
             value: stats?.totalContacts ?? '—',
             icon: Users,
-            color: 'text-emerald-400',
-            bg: 'bg-emerald-500/10 border-emerald-500/20',
+            color: 'text-success',
+            bg: 'bg-success/10 border-success/20',
             desc: 'Kontak personil RS',
         },
         {
             label: 'Active Tickets',
             value: stats?.totalActive ?? '—',
             icon: TicketIcon,
-            color: 'text-amber-400',
-            bg: 'bg-amber-500/10 border-amber-500/20',
+            color: 'text-warning',
+            bg: 'bg-warning/10 border-warning/20',
             desc: 'Tiket belum selesai',
         },
         {
             label: 'Resolved',
             value: stats?.totalResolved ?? '—',
             icon: CheckCircle2,
-            color: 'text-teal-400',
-            bg: 'bg-teal-500/10 border-teal-500/20',
+            color: 'text-info',
+            bg: 'bg-info/10 border-info/20',
             desc: 'Tiket selesai',
         },
         {
             label: 'Unclaimed',
             value: stats?.unassigned ?? '—',
             icon: UserCheck,
-            color: 'text-red-400',
-            bg: 'bg-red-500/10 border-red-500/20',
+            color: 'text-destructive',
+            bg: 'bg-destructive/10 border-destructive/20',
             desc: 'Menunggu agen',
         },
         {
             label: 'Active Agents',
             value: stats?.totalAgents ?? '—',
             icon: AlertTriangle,
-            color: 'text-violet-400',
-            bg: 'bg-violet-500/10 border-violet-500/20',
+            color: 'text-primary',
+            bg: 'bg-primary/10 border-primary/20',
             desc: 'Agen CRM terdaftar',
         },
     ];
@@ -168,9 +168,9 @@ export function DashboardPage() {
                                         const total = stats?.totalActive || 1;
                                         const pct = Math.round((count / total) * 100);
                                         const colors: Record<string, string> = {
-                                            NEW: 'bg-blue-500',
-                                            OPEN: 'bg-emerald-500',
-                                            PENDING: 'bg-amber-500',
+                                            NEW: 'bg-primary',
+                                            OPEN: 'bg-success',
+                                            PENDING: 'bg-warning',
                                         };
                                         return (
                                             <div key={s}>
@@ -199,10 +199,10 @@ export function DashboardPage() {
                                         const total = stats?.totalActive || 1;
                                         const pct = Math.round((count / total) * 100);
                                         const colors: Record<string, string> = {
-                                            URGENT: 'bg-red-500',
-                                            HIGH: 'bg-orange-500',
-                                            MEDIUM: 'bg-yellow-500',
-                                            LOW: 'bg-teal-500',
+                                            URGENT: 'bg-destructive',
+                                            HIGH: 'bg-warning',
+                                            MEDIUM: 'bg-info',
+                                            LOW: 'bg-success',
                                         };
                                         return (
                                             <div key={p}>
@@ -230,7 +230,7 @@ export function DashboardPage() {
                             </CardTitle>
                             <button
                                 onClick={() => navigate('/tickets')}
-                                className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
+                                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 transition-colors cursor-pointer"
                             >
                                 Lihat Semua <ExternalLink className="w-3 h-3" />
                             </button>

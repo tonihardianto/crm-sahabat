@@ -19,6 +19,7 @@ import { AppSettingsPage } from '@/pages/AppSettingsPage';
 import { CalendarPage } from '@/pages/CalendarPage';
 import { PublicCalendarPage } from '@/pages/PublicCalendarPage';
 import { BlastPage } from '@/pages/BlastPage';
+import { TeamsPage } from '@/pages/TeamsPage';
 
 const PAGE_TITLES: Record<string, string> = {
   '/': 'Dashboard',
@@ -31,6 +32,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/calendar': 'Kalender Event',
   '/settings': 'Pengaturan',
   '/users': 'Pengguna',
+  '/teams': 'Tim',
   '/login': 'Login',
 };
 
@@ -67,6 +69,11 @@ function AppLayout() {
             <Route path="/users" element={
               <PrivateRoute adminOnly>
                 <UsersPage />
+              </PrivateRoute>
+            } />
+            <Route path="/teams" element={
+              <PrivateRoute adminOnly>
+                <TeamsPage />
               </PrivateRoute>
             } />
           </Routes>

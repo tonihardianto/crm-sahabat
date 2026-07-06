@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import prisma from "../lib/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { sendTemplateMessage } from "../lib/whatsapp";
 
 // GET /api/calendar — Public, no auth required
 export async function getEvents(_req: Request, res: Response): Promise<void> {
@@ -20,9 +21,23 @@ export async function getEvents(_req: Request, res: Response): Promise<void> {
                 createdBy: {
                     select: { name: true },
                 },
+                eventTeams: {
+                    select: {
+                        team: {
+                            select: { id: true, name: true, department: true },
+                        },
+                    },
+                },
             },
         });
-        res.json(events);
+
+        // Flatten: { eventTeams: [{ team: { ... } }] } → { teams: [{ ... }] }
+        const result = events.map(({ eventTeams, ...rest }) => ({
+            ...rest,
+            teams: eventTeams.map(et => et.team),
+        }));
+
+        res.json(result);
     } catch (err) {
         console.error("getEvents error:", err);
         res.status(500).json({ message: "Internal server error" });
@@ -39,6 +54,8 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
         const allDay = req.body.allDay as boolean | undefined;
         const color = req.body.color as string | undefined;
         const location = req.body.location as string | undefined;
+        const teamIds = req.body.teamIds as string[] | undefined;
+        const sendInvitation = req.body.sendInvitation as boolean | undefined;
 
         if (!title || !startDate) {
             res.status(400).json({ message: "title dan startDate wajib diisi" });
@@ -55,10 +72,73 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
                 color: color ?? null,
                 location: location ?? null,
                 createdById: req.user!.userId,
+                eventTeams: teamIds && teamIds.length > 0
+                    ? { create: teamIds.map(teamId => ({ teamId })) }
+                    : undefined,
             },
         });
 
-        res.status(201).json(event);
+        // Send WhatsApp invitations
+        let invitationResult: { sent: number; failed: number; errors: string[] } | undefined;
+        if (sendInvitation && teamIds && teamIds.length > 0) {
+            const teams = await prisma.team.findMany({
+                where: { id: { in: teamIds }, phone: { not: null }, status: "ACTIVE" },
+                select: { id: true, name: true, phone: true },
+            });
+
+            // Format date in Indonesian
+            const start = new Date(startDate);
+            const dateStr = start.toLocaleDateString("id-ID", {
+                weekday: "long", day: "numeric", month: "long", year: "numeric",
+            });
+            const timeStr = allDay
+                ? "Seharian penuh"
+                : `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")}`;
+            const endTimeStr = !allDay && endDate
+                ? ` - ${String(new Date(endDate).getHours()).padStart(2, "0")}:${String(new Date(endDate).getMinutes()).padStart(2, "0")}`
+                : "";
+            const formattedDate = `${dateStr}, ${timeStr}${endTimeStr}`;
+            const place = location || "Online";
+
+            const components = [{
+                type: "body",
+                parameters: [
+                    { type: "text", text: "{{1}}" },
+                    { type: "text", text: "{{2}}" },
+                    { type: "text", text: "{{3}}" },
+                    { type: "text", text: "{{4}}" },
+                ],
+            }];
+
+            let sent = 0, failed = 0;
+            const errors: string[] = [];
+
+            for (const team of teams) {
+                if (!team.phone) { failed++; continue; }
+                try {
+                    // Build per-team components with actual values
+                    const teamComponents = [{
+                        type: "body",
+                        parameters: [
+                            { type: "text", text: team.name },
+                            { type: "text", text: title },
+                            { type: "text", text: formattedDate },
+                            { type: "text", text: place },
+                        ],
+                    }];
+                    await sendTemplateMessage(team.phone, "event_invitation", "id", teamComponents);
+                    sent++;
+                } catch (err: any) {
+                    failed++;
+                    errors.push(`${team.name}: ${err.message}`);
+                    console.error(`[Calendar] Failed to send invitation to ${team.name}:`, err.message);
+                }
+            }
+
+            invitationResult = { sent, failed, errors };
+        }
+
+        res.status(201).json({ event, invitation: invitationResult });
     } catch (err) {
         console.error("createEvent error:", err);
         res.status(500).json({ message: "Internal server error" });
@@ -76,6 +156,7 @@ export async function updateEvent(req: AuthRequest, res: Response): Promise<void
         const allDay = req.body.allDay as boolean | undefined;
         const color = req.body.color as string | undefined;
         const location = req.body.location as string | undefined;
+        const teamIds = req.body.teamIds as string[] | undefined;
 
         const existing = await prisma.calendarEvent.findUnique({ where: { id } });
         if (!existing) {
@@ -83,17 +164,29 @@ export async function updateEvent(req: AuthRequest, res: Response): Promise<void
             return;
         }
 
+        // Sync teams: delete all existing, create new if provided
+        const data: Record<string, unknown> = {
+            title: title ?? existing.title,
+            description: description !== undefined ? description : existing.description,
+            startDate: startDate ? new Date(startDate) : existing.startDate,
+            endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : existing.endDate,
+            allDay: allDay !== undefined ? allDay : existing.allDay,
+            color: color !== undefined ? color : existing.color,
+            location: location !== undefined ? location : existing.location,
+        };
+
+        if (teamIds !== undefined) {
+            await prisma.calendarEventTeam.deleteMany({ where: { eventId: id } });
+            if (teamIds.length > 0) {
+                await prisma.calendarEventTeam.createMany({
+                    data: teamIds.map(teamId => ({ eventId: id, teamId })),
+                });
+            }
+        }
+
         const event = await prisma.calendarEvent.update({
             where: { id },
-            data: {
-                title: title ?? existing.title,
-                description: description !== undefined ? description : existing.description,
-                startDate: startDate ? new Date(startDate) : existing.startDate,
-                endDate: endDate !== undefined ? (endDate ? new Date(endDate) : null) : existing.endDate,
-                allDay: allDay !== undefined ? allDay : existing.allDay,
-                color: color !== undefined ? color : existing.color,
-                location: location !== undefined ? location : existing.location,
-            },
+            data: data as any,
         });
 
         res.json(event);

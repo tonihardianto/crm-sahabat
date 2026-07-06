@@ -384,21 +384,58 @@ model PushSubscription {
 // ============================================================
 
 model CalendarEvent {
-  id          String    @id @default(cuid())
+  id          String              @id @default(cuid())
   title       String
-  description String?   @db.Text
-  startDate   DateTime  @map("start_date")
-  endDate     DateTime? @map("end_date")
-  allDay      Boolean   @default(false) @map("all_day")
-  color       String?   // Warna event hex, e.g. "#3b82f6"
+  description String?             @db.Text
+  startDate   DateTime            @map("start_date")
+  endDate     DateTime?           @map("end_date")
+  allDay      Boolean             @default(false) @map("all_day")
+  color       String?             // Warna event hex, e.g. "#3b82f6"
   location    String?
-  createdById String    @map("created_by_id")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdById String              @map("created_by_id")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
 
-  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdBy      User                  @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  eventTeams     CalendarEventTeam[]
 
   @@index([createdById])
   @@index([startDate])
   @@map("calendar_events")
+}
+
+// Junction table: many-to-many antara CalendarEvent dan Team
+model CalendarEventTeam {
+  eventId String @map("event_id")
+  teamId  String @map("team_id")
+
+  event CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  team  Team          @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@id([eventId, teamId])
+  @@map("calendar_event_teams")
+}
+
+// ============================================================
+// Teams (Tim — untuk calendar dan assignment)
+// ============================================================
+
+model Team {
+  id         String     @id @default(cuid())
+  name       String
+  email      String?
+  phone      String?
+  department String?
+  status     TeamStatus @default(ACTIVE)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  eventTeams CalendarEventTeam[]
+
+  @@map("teams")
+}
+
+enum TeamStatus {
+  ACTIVE
+  INACTIVE
 }
