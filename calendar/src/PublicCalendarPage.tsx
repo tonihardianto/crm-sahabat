@@ -66,6 +66,13 @@ export function PublicCalendarPage() {
         };
     });
 
+    const upcomingCount = events.filter(e => {
+        const end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return end >= today;
+    }).length;
+
     const formatDate = (iso: string, allDay: boolean) => {
         const d = new Date(iso);
         if (allDay) {
@@ -111,7 +118,7 @@ export function PublicCalendarPage() {
                         {/* Card header with event count */}
                         <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
                             <p className="text-xs text-muted-foreground font-medium">
-                                {events.length} kegiatan terjadwal
+                                {upcomingCount} kegiatan terjadwal
                             </p>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                 {['#3b82f6','#22c55e','#ef4444','#f97316','#a855f7','#ec4899'].map(c => (
