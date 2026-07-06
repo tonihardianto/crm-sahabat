@@ -4,7 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import multiMonthPlugin from '@fullcalendar/multimonth';
 import type { EventInput } from '@fullcalendar/core';
-import { Calendar, MapPin, Info, X, Sun, Moon } from 'lucide-react';
+import { Calendar, MapPin, Info, X, Sun, Moon, Users } from 'lucide-react';
 import './calendar.css';
 
 function useTheme() {
@@ -30,6 +30,7 @@ interface CalendarEvent {
     color?: string;
     location?: string;
     createdBy?: { name: string };
+    teams?: { id: string; name: string; department?: string }[];
 }
 
 export function PublicCalendarPage() {
@@ -46,16 +47,24 @@ export function PublicCalendarPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    const fcEvents: EventInput[] = events.map(e => ({
-        id: e.id,
-        title: e.title,
-        start: e.startDate,
-        end: e.endDate ?? undefined,
-        allDay: e.allDay,
-        backgroundColor: e.color ?? '#3b82f6',
-        borderColor: e.color ?? '#3b82f6',
-        textColor: '#ffffff',
-    }));
+    const fcEvents: EventInput[] = events.map(e => {
+        // FullCalendar uses exclusive end dates — add one day for all-day events
+        let end: string | undefined;
+        if (e.endDate) {
+            const d = new Date(e.endDate);
+            if (e.allDay) d.setDate(d.getDate() + 1);
+            end = d.toISOString();
+        }
+        return {
+            id: e.id,
+            title: e.location ? `${e.location} — ${e.title}` : e.title,
+            start: e.startDate,
+            end,
+            allDay: e.allDay,
+            backgroundColor: e.color ?? '#c8842c',
+            borderColor: e.color ?? '#c8842c',
+        };
+    });
 
     const formatDate = (iso: string, allDay: boolean) => {
         const d = new Date(iso);
@@ -66,26 +75,23 @@ export function PublicCalendarPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="sticky top-0 z-10 border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md">
+            <header className="sticky top-0 z-10 border-b border-border bg-card/90 backdrop-blur-md">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
-                    {/* <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0 shadow-sm shadow-blue-500/30">
-                        <Calendar className="w-4 h-4 text-white" />
-                    </div> */}
                     <div className="min-w-0">
-                        <h1 className="text-sm font-bold text-slate-900 dark:text-white leading-tight">Kalender Kegiatan</h1>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 leading-tight truncate">Tim Support SIMRS Sahabat</p>
+                        <h1 className="text-sm font-bold text-foreground leading-tight">Kalender Kegiatan</h1>
+                        <p className="text-xs text-muted-foreground leading-tight truncate">Tim Support SIMRS Sahabat</p>
                     </div>
                     <div className="ml-auto flex items-center gap-2">
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-success bg-success/10 border border-success/20 px-2.5 py-1 rounded-full">
+                            <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                             Live
                         </span>
                         <button
                             onClick={toggle}
                             title={dark ? 'Ganti ke Light Mode' : 'Ganti ke Dark Mode'}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:bg-accent transition-colors"
                         >
                             {dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                         </button>
@@ -96,15 +102,15 @@ export function PublicCalendarPage() {
             {/* Main */}
             <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center min-h-[450px] gap-3 text-slate-400">
-                        <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <div className="flex flex-col items-center justify-center min-h-[450px] gap-3 text-muted-foreground">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm">Memuat kalender...</span>
                     </div>
                 ) : (
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">
+                    <div className="bg-card rounded-2xl shadow-sm border border-border">
                         {/* Card header with event count */}
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-100 dark:border-slate-800">
-                            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+                            <p className="text-xs text-muted-foreground font-medium">
                                 {events.length} kegiatan terjadwal
                             </p>
                             <div className="flex items-center gap-1.5 flex-wrap justify-end">
@@ -143,7 +149,7 @@ export function PublicCalendarPage() {
                     </div>
                 )}
 
-                <p className="text-center text-xs text-slate-400 dark:text-slate-600 mt-5">
+                <p className="text-center text-xs text-muted-foreground mt-5">
                     Kalender ini bersifat publik dan hanya untuk informasi. &nbsp;·&nbsp; Hubungi Tim Support Sahabat untuk informasi lebih lanjut.
                 </p>
             </main>
@@ -155,24 +161,24 @@ export function PublicCalendarPage() {
                     onClick={() => setSelectedEvent(null)}
                 >
                     <div
-                        className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+                        className="bg-card rounded-2xl shadow-2xl w-full max-w-sm border border-border overflow-hidden"
                         onClick={e => e.stopPropagation()}
                     >
                         {/* Color accent bar */}
-                        <div className="h-1" style={{ backgroundColor: selectedEvent.color ?? '#3b82f6' }} />
+                        <div className="h-1" style={{ backgroundColor: selectedEvent.color ?? '#c8842c' }} />
 
                         {/* Modal header */}
-                        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-100 dark:border-slate-800">
+                        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border">
                             <div className="flex items-center gap-2.5 min-w-0">
                                 <span
                                     className="w-2.5 h-2.5 rounded-full shrink-0 mt-0.5"
-                                    style={{ backgroundColor: selectedEvent.color ?? '#3b82f6' }}
+                                    style={{ backgroundColor: selectedEvent.color ?? '#c8842c' }}
                                 />
-                                <h2 className="font-semibold text-sm text-slate-900 dark:text-white leading-snug">{selectedEvent.title}</h2>
+                                <h2 className="font-semibold text-sm text-foreground leading-snug">{selectedEvent.title}</h2>
                             </div>
                             <button
                                 onClick={() => setSelectedEvent(null)}
-                                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 shrink-0 transition-colors"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-accent shrink-0 transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
@@ -180,26 +186,39 @@ export function PublicCalendarPage() {
 
                         {/* Modal body */}
                         <div className="px-5 py-4 space-y-3">
-                            <div className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400">
-                                <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-blue-500" />
+                            <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                                <Calendar className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
                                 <div className="space-y-0.5">
-                                    <div className="font-medium text-slate-800 dark:text-slate-200">{formatDate(selectedEvent.startDate, selectedEvent.allDay)}</div>
+                                    <div className="font-medium text-foreground">{formatDate(selectedEvent.startDate, selectedEvent.allDay)}</div>
                                     {selectedEvent.endDate && (
-                                        <div className="text-slate-400 dark:text-slate-500 text-xs">s/d {formatDate(selectedEvent.endDate, selectedEvent.allDay)}</div>
+                                        <div className="text-muted-foreground text-xs">s/d {formatDate(selectedEvent.endDate, selectedEvent.allDay)}</div>
                                     )}
                                 </div>
                             </div>
 
                             {selectedEvent.location && (
-                                <div className="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
                                     <MapPin className="w-4 h-4 shrink-0 text-rose-500" />
                                     <span>{selectedEvent.location}</span>
                                 </div>
                             )}
 
+                            {selectedEvent.teams && selectedEvent.teams.length > 0 && (
+                                <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                                    <Users className="w-4 h-4 mt-0.5 shrink-0 text-primary" />
+                                    <div className="flex flex-wrap gap-1">
+                                        {selectedEvent.teams.map(t => (
+                                            <span key={t.id} className="text-xs px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-primary">
+                                                {t.name}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             {selectedEvent.description && (
-                                <div className="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-400">
-                                    <Info className="w-4 h-4 mt-0.5 shrink-0 text-amber-500" />
+                                <div className="flex items-start gap-3 text-sm text-muted-foreground">
+                                    <Info className="w-4 h-4 mt-0.5 shrink-0 text-warning" />
                                     <p className="leading-relaxed">{selectedEvent.description}</p>
                                 </div>
                             )}

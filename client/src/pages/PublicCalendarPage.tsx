@@ -42,7 +42,7 @@ export function PublicCalendarPage() {
         }
         return {
             id: e.id,
-            title: e.location ? `${e.location} — ${e.title}` : e.title,
+            title: e.location ? `${e.location} : ${e.title}` : e.title,
             start: e.startDate,
             end,
             allDay: e.allDay,
