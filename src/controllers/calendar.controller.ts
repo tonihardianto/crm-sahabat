@@ -98,12 +98,20 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
             };
 
             const start = new Date(startDate);
-            const dateStr = fmtDate(start);
-            const timeStr = allDay ? "Seharian penuh" : tzParts(start);
-            const endTimeStr = !allDay && endDate
-                ? ` - ${tzParts(new Date(endDate))}`
-                : "";
-            const formattedDate = `${dateStr}, ${timeStr}${endTimeStr}`;
+            const end = endDate ? new Date(endDate) : null;
+
+            let formattedDate: string;
+            if (allDay && end && end.toDateString() !== start.toDateString()) {
+                // Multi-day all-day: "Kamis, 9 Juli 2026 - Sabtu, 11 Juli 2026, Seharian penuh"
+                formattedDate = `${fmtDate(start)} - ${fmtDate(end)}, Seharian penuh`;
+            } else if (allDay) {
+                // Single-day all-day
+                formattedDate = `${fmtDate(start)}, Seharian penuh`;
+            } else {
+                // Timed event
+                const endStr = end ? ` - ${tzParts(end)}` : "";
+                formattedDate = `${fmtDate(start)}, ${tzParts(start)}${endStr}`;
+            }
             const place = location || "Online";
 
             const components = [{
