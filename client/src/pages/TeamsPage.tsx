@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Users, Plus, Pencil, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, Plus, Pencil, Trash2, CheckCircle2, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
 
 interface Team {
@@ -28,6 +27,7 @@ interface TeamForm {
 }
 
 const emptyForm: TeamForm = { name: '', email: '', phone: '', department: '', status: 'ACTIVE' };
+const PAGE_SIZE = 10;
 
 function formatDate(d: string) {
     return new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -42,12 +42,20 @@ export function TeamsPage() {
     const [saving, setSaving] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<Team | null>(null);
     const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const [totalPages, setTotalPages] = useState(1);
 
-    const loadTeams = useCallback(async () => {
+    const loadTeams = useCallback(async (p: number) => {
+        setLoading(true);
         try {
-            const res = await fetch('/api/teams', { credentials: 'include' });
+            const res = await fetch(`/api/teams?page=${p}&limit=${PAGE_SIZE}`, { credentials: 'include' });
             if (!res.ok) throw new Error();
-            setTeams(await res.json());
+            const data = await res.json();
+            setTeams(data.teams);
+            setTotal(data.total);
+            setTotalPages(data.totalPages);
+            setPage(data.page);
         } catch {
             toast.error('Gagal memuat data tim');
         } finally {
@@ -55,7 +63,7 @@ export function TeamsPage() {
         }
     }, []);
 
-    useEffect(() => { loadTeams(); }, [loadTeams]);
+    useEffect(() => { loadTeams(1); }, [loadTeams]);
 
     const openCreate = () => { setEditing(null); setForm(emptyForm); setDialogOpen(true); };
     const openEdit = (t: Team) => {
@@ -89,7 +97,7 @@ export function TeamsPage() {
             if (!res.ok) throw new Error();
             toast.success(editing ? 'Tim berhasil diperbarui' : 'Tim berhasil ditambahkan');
             setDialogOpen(false);
-            loadTeams();
+            loadTeams(page);
         } catch {
             toast.error('Gagal menyimpan tim');
         } finally {
@@ -105,7 +113,9 @@ export function TeamsPage() {
             toast.error('Gagal menghapus tim');
         }
         setDeleteTarget(null);
-        loadTeams();
+        // Go to previous page if we deleted the last item on this page
+        const newPage = teams.length === 1 && page > 1 ? page - 1 : page;
+        loadTeams(newPage);
     };
 
     const filtered = teams.filter(t =>
@@ -131,7 +141,8 @@ export function TeamsPage() {
                 </Button>
             </div>
 
-            <ScrollArea className="flex-1 overflow-y-auto">
+            {/* Content — scrollable */}
+            <div className="flex-1 overflow-y-auto">
                 <div className="px-4 md:px-8 py-4 md:py-6">
                     {/* Search */}
                     <div className="mb-4">
@@ -146,7 +157,7 @@ export function TeamsPage() {
                     <Card>
                         <CardHeader className="pb-3">
                             <CardTitle className="text-sm font-semibold">
-                                {filtered.length} Tim Terdaftar
+                                {total} Tim Terdaftar
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-0">
@@ -172,7 +183,7 @@ export function TeamsPage() {
                                         {filtered.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={7} className="text-center text-muted-foreground py-10">
-                                                    Belum ada tim terdaftar. Klik <strong>Tambah Tim</strong> untuk membuat.
+                                                    {search ? 'Tidak ada tim yang cocok dengan pencarian.' : 'Belum ada tim terdaftar.'}
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
@@ -223,8 +234,37 @@ export function TeamsPage() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between mt-4 text-sm">
+                            <span className="text-muted-foreground">
+                                Halaman {page} dari {totalPages}
+                            </span>
+                            <div className="flex items-center gap-1">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => loadTeams(page - 1)}
+                                    disabled={page <= 1}
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                    Sebelumnya
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => loadTeams(page + 1)}
+                                    disabled={page >= totalPages}
+                                >
+                                    Berikutnya
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </ScrollArea>
+            </div>
 
             {/* Create/Edit Dialog */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

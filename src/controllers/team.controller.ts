@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
 import * as teamService from "../services/team.service";
 
-export async function listTeams(_req: Request, res: Response): Promise<void> {
+export async function listTeams(req: Request, res: Response): Promise<void> {
     try {
-        const teams = await teamService.listTeams();
-        res.json(teams);
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
+        const result = await teamService.listTeams(page, limit);
+        res.json(result);
     } catch (error) {
         console.error("[Team] Error listing teams:", error);
         res.status(500).json({ error: "Failed to fetch teams" });

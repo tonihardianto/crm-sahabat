@@ -1,10 +1,22 @@
 import prisma from "../lib/prisma";
 import { TeamStatus } from "@prisma/client/index.js";
 
-export async function listTeams() {
-    return prisma.team.findMany({
-        orderBy: { name: "asc" },
-    });
+export async function listTeams(page: number = 1, limit: number = 10) {
+    const skip = (page - 1) * limit;
+    const [teams, total] = await Promise.all([
+        prisma.team.findMany({
+            skip,
+            take: limit,
+            orderBy: { name: "asc" },
+        }),
+        prisma.team.count(),
+    ]);
+    return {
+        teams,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+    };
 }
 
 export async function getTeamById(id: string) {
