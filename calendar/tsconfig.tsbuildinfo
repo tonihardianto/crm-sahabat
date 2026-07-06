@@ -1,1 +1,1 @@
-{"root":["./src/publiccalendarpage.tsx","./src/main.tsx","./src/vite-env.d.ts"],"version":"5.9.3"}
+{"root":["./src/publiccalendarpage.tsx","./src/main.tsx","./src/themes.ts","./src/vite-env.d.ts"],"version":"5.9.3"}

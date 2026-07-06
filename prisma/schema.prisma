@@ -439,3 +439,14 @@ enum TeamStatus {
   ACTIVE
   INACTIVE
 }
+
+// ============================================================
+// SiteConfig (pengaturan global — singleton)
+// ============================================================
+
+model SiteConfig {
+  id    String @id @default("default")
+  theme String @default("amber")
+
+  @@map("site_config")
+}
